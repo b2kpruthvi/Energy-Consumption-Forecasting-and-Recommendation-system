@@ -1,0 +1,48 @@
+.forecasting-container {
+  padding: 20px;
+  color: #222;
+}
+
+.forecast-btn {
+  margin-top: 10px;
+  padding: 8px 14px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.forecast-btn:hover {
+  background-color: #0056b3;
+}
+
+.response-box {
+  background: #f9f9f9;
+  padding: 10px;
+  border-radius: 6px;
+  margin-top: 15px;
+  white-space: pre-wrap;
+}
+
+.chart-container {
+  margin-top: 30px;
+}
+
+.forecast-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 30px;
+  background: white;
+}
+
+.forecast-table th,
+.forecast-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.forecast-table th {
+  background-color: #f2f2f2;
+}

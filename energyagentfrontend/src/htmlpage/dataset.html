@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dataset Upload</title>
+    <link rel="stylesheet" href="../styles/style.css">
+</head>
+<body>
+    <nav class="sidebar">
+        <ul>
+            <li><a href="dataset.html">Dataset Upload</a></li>
+            <li><a href="overview.html">Overview</a></li>
+            <li><a href="distribution.html">Distribution</a></li>
+            <li><a href="forecasting.html">Forecasting</a></li>
+            <li><a href="recommendation.html">Recommendation</a></li>
+            <li><a href="prediction.html">Prediction</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <h2>Upload Dataset</h2>
+        <div class="upload-container">
+            <input type="file" id="datasetFile" accept=".csv,.xlsx">
+            <button id="uploadBtn">Upload</button>
+        </div>
+
+        <h3>Preview Data</h3>
+        <div id="previewContainer"></div>
+    </main>
+
+
+    <script src="../js/utils.js"></script>
+    <script src="../js/dataset.js"></script>
+
+</body>
+</html>

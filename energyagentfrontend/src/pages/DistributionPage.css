@@ -1,0 +1,38 @@
+.distribution-container {
+  padding: 20px;
+}
+
+.chart-section {
+  width: 90%;
+  margin: auto;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  width: 80%;
+  max-height: 80vh;
+  overflow: auto;
+  border-radius: 8px;
+}
+
+.modal-content table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.modal-content th,
+.modal-content td {
+  border: 1px solid #ddd;
+  padding: 6px;
+  text-align: center;
+}
