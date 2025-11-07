@@ -1,222 +1,149 @@
-import React, { useState } from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Line } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
+import './ForecastingPage.css'; // Your existing CSS file
 
-function ForecastingPage() {
-  const [forecastData, setForecastData] = useState([]);
-  const [metrics, setMetrics] = useState(null);
-  const [message, setMessage] = useState("");
-  const [days, setDays] = useState(7); // default forecast period
+// Register Chart.js components
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-  const handleForecast = async () => {
+const ForecastingPage = () => {
+  const [forecastData, setForecastData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    fetchForecast();
+  }, []);
+
+  const fetchForecast = async () => {
+    setIsLoading(true);
+    setErrorMessage('');
+    setForecastData(null);
+
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      setErrorMessage('You must be logged in to view forecasts.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      setMessage("⏳ Generating forecast...");
-      setForecastData([]);
-
-      const res = await fetch("http://127.0.0.1:5000/forecast", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ days }),
+      const response = await axios.get('http://127.0.0.1:5000/forecast', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
+      setForecastData(response.data);
+      setIsLoading(false);
 
-      const data = await res.json();
-
-      if (data.error) {
-        setMessage("⚠️ " + data.error);
-        return;
+    } catch (error) {
+      setIsLoading(false);
+      if (error.response) {
+        setErrorMessage(error.response.data.error || error.response.data.msg || 'Failed to fetch forecast.');
+      } else {
+        setErrorMessage('Network error. Could not connect to the server.');
       }
-
-      // Combine historical + forecast data
-      const formatted = [];
-
-      if (data.history) {
-        Object.entries(data.history).forEach(([date, value]) =>
-          formatted.push({ date, Actual: value })
-        );
-      }
-
-      if (data.forecast) {
-        Object.entries(data.forecast).forEach(([date, value]) => {
-          const existing = formatted.find((d) => d.date === date);
-          if (existing) existing.Forecast = value;
-          else formatted.push({ date, Forecast: value });
-        });
-      }
-
-      setForecastData(formatted);
-      setMetrics(data.metrics || null);
-      setMessage(`✅ ${data.message}`);
-    } catch (err) {
-      console.error(err);
-      setMessage("❌ Error fetching forecast data.");
     }
   };
 
+  // --- Chart Data ---
+  const chartData = {
+    labels: forecastData ? [...forecastData.historical_dates, ...forecastData.forecast_dates] : [],
+    datasets: [
+      {
+        label: 'Historical Daily Average',
+        data: forecastData ? forecastData.historical_values : [],
+        borderColor: 'rgb(54, 162, 235)',
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        fill: true,
+        pointRadius: 1,
+        tension: 0.1 
+      },
+      {
+        label: 'Forecasted Data',
+        data: forecastData ? 
+              (new Array(forecastData.historical_values.length).fill(null)).concat(forecastData.forecast_values) 
+              : [],
+        borderColor: 'rgb(255, 99, 132)',
+        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+        fill: true, 
+        borderDash: [5, 5], 
+        pointRadius: 2,
+        tension: 0.1
+      }
+    ]
+  };
+
+  // --- UPDATED CHART OPTIONS ---
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false, // <-- THIS IS THE CRITICAL CHANGE
+    interaction: {
+      mode: 'index', 
+      intersect: false,
+    },
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: 'Daily Average Energy Forecast',
+        font: { size: 20, weight: 'bold', family: "'Segoe UI', Arial, sans-serif" }
+      },
+      tooltip: {
+        enabled: true,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleFont: { size: 14 },
+        bodyFont: { size: 12 },
+        padding: 10,
+        cornerRadius: 4,
+        displayColors: true,
+      }
+    },
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: 'Date',
+          font: { size: 14, weight: 'bold' }
+        },
+        ticks: {
+          autoSkip: true,
+          maxTicksLimit: 10 
+        }
+      },
+      y: {
+        title: {
+          display: true,
+          text: 'Energy (Units)',
+          font: { size: 14, weight: 'bold' }
+        }
+      }
+    },
+    animation: {
+      duration: 1000,
+      easing: 'easeInOutQuad'
+    }
+  };
+  
+  // --- Render Logic ---
   return (
-    <div style={{ padding: "30px", maxWidth: "1100px", margin: "0 auto" }}>
-      <h2 style={{ textAlign: "center", marginBottom: "20px" }}>
-        📈 Energy Consumption Forecasting
-      </h2>
-
-      <div
-        style={{
-          textAlign: "center",
-          marginBottom: "20px",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: "10px",
-        }}
-      >
-        <label>
-          Forecast period:
-          <select
-            value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
-            style={{
-              marginLeft: "10px",
-              padding: "6px",
-              fontSize: "15px",
-              borderRadius: "5px",
-            }}
-          >
-            <option value={7}>Next 7 Days</option>
-            <option value={30}>Next 30 Days</option>
-            <option value={90}>Next 90 Days</option>
-          </select>
-        </label>
-
-        <button
-          onClick={handleForecast}
-          style={{
-            padding: "10px 18px",
-            fontSize: "16px",
-            borderRadius: "8px",
-            backgroundColor: "#4CAF50",
-            color: "white",
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          Generate Forecast
-        </button>
-      </div>
-
-      <p style={{ textAlign: "center", fontWeight: "bold", color: "#444" }}>
-        {message}
-      </p>
-
-      {/* 📊 Forecast Chart */}
-      {forecastData.length > 0 && (
-        <div
-          style={{
-            background: "#fff",
-            padding: "15px",
-            borderRadius: "10px",
-            boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-          }}
-        >
-          <h3 style={{ textAlign: "center", marginBottom: "10px" }}>
-            Forecast vs Actual Trend
-          </h3>
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={forecastData}>
-              <CartesianGrid stroke="#eee" strokeDasharray="5 5" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="Actual"
-                stroke="#8884d8"
-                dot={false}
-                strokeWidth={2}
-              />
-              <Line
-                type="monotone"
-                dataKey="Forecast"
-                stroke="#82ca9d"
-                dot={false}
-                strokeWidth={2}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* 📋 Forecast Table */}
-      {forecastData.length > 0 && (
-        <div
-          style={{
-            marginTop: "30px",
-            overflowX: "auto",
-            background: "#fff",
-            borderRadius: "10px",
-            padding: "10px",
-            boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-          }}
-        >
-          <h3 style={{ textAlign: "center" }}>Forecast Data Table</h3>
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              textAlign: "center",
-              marginTop: "10px",
-            }}
-          >
-            <thead style={{ background: "#4CAF50", color: "white" }}>
-              <tr>
-                <th style={{ padding: "10px" }}>Date</th>
-                <th style={{ padding: "10px" }}>Actual</th>
-                <th style={{ padding: "10px" }}>Forecast</th>
-              </tr>
-            </thead>
-            <tbody>
-              {forecastData.map((row, i) => (
-                <tr key={i} style={{ borderBottom: "1px solid #ddd" }}>
-                  <td style={{ padding: "8px" }}>{row.date}</td>
-                  <td style={{ padding: "8px" }}>
-                    {row.Actual ? row.Actual.toFixed(2) : "-"}
-                  </td>
-                  <td style={{ padding: "8px" }}>
-                    {row.Forecast ? row.Forecast.toFixed(2) : "-"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* 📈 Optional: Show metrics */}
-      {metrics && (
-        <div
-          style={{
-            marginTop: "30px",
-            textAlign: "center",
-            background: "#f9f9f9",
-            padding: "15px",
-            borderRadius: "10px",
-          }}
-        >
-          <h3>Model Performance Metrics</h3>
-          <p>MAE: {metrics.MAE}</p>
-          <p>RMSE: {metrics.RMSE}</p>
-          <p>MAPE: {metrics["MAPE (%)"]}%</p>
+    // The h2 title has been removed from here
+    <div className="forecast-container"> 
+      
+      {isLoading && <p className="loading-message">Generating forecast, please wait...</p>}
+      
+      {errorMessage && <p className="error-message">{errorMessage}</p>}
+      
+      {forecastData && (
+        <div className="chart-wrapper">
+          <Line options={chartOptions} data={chartData} />
         </div>
       )}
     </div>
   );
-}
+};
 
 export default ForecastingPage;

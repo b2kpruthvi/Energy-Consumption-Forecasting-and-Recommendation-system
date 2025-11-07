@@ -1,31 +1,77 @@
-// src/App.js
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Sidebar from "./pages/Sidebar"; // or Navbar if you use that
-import ForecastingPage from "./pages/ForecastingPage";
-import DistributionPage from "./pages/DistributionPage";
-import Overview from "./pages/Overview";
-import Dataset from "./pages/Dataset";
-import RecommendationPage from "./pages/RecommendationPage";
-import HomePage from "./pages/HomePage";
-import Dashboard from "./pages/Dashboard";
+import React from 'react';
+import './App.css'; // This is your new CSS
+import { BrowserRouter as Router, Routes, Route, Outlet, Navigate } from 'react-router-dom';
+
+// Import all your pages
+import Sidebar from './pages/Sidebar';
+import HomePage from './pages/HomePage';
+import Dashboard from './pages/Dashboard';
+import Dataset from './pages/Dataset';
+import Overview from './pages/Overview';
+import DistributionPage from './pages/DistributionPage';
+import ForecastingPage from './pages/ForecastingPage';
+import RecommendationPage from './pages/RecommendationPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+
+// --- This is our Protected Route logic ---
+const useAuth = () => {
+  const token = localStorage.getItem('access_token');
+  return token ? true : false;
+};
+
+// --- This is our new Layout Component ---
+// It shows the Sidebar and the page content next to it
+const ProtectedLayout = () => {
+  const isAuth = useAuth();
+
+  if (!isAuth) {
+    // If not logged in, redirect to login
+    return <Navigate to="/login" />;
+  }
+
+  return (
+    <div className="app-container">
+      <Sidebar />
+      <div className="page-container">
+        <Outlet /> {/* This renders the current page (e.g., HomePage) */}
+      </div>
+    </div>
+  );
+};
+
+// --- This layout is for public pages (no sidebar) ---
+const PublicLayout = () => {
+  return (
+    <div>
+      <Outlet />
+    </div>
+  );
+};
+
 function App() {
   return (
     <Router>
-      <div className="app">
-        <Sidebar />
-        <div className="content">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/dataset" element={<Dataset />} />
-            <Route path="/overview" element={<Overview />} />
-            <Route path="/distribution" element={<DistributionPage />} />
-            <Route path="/forecasting" element={<ForecastingPage />} />
-            <Route path="/recommendation" element={<RecommendationPage />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-          </Routes>
-        </div>
-      </div>
+      <Routes>
+        {/* --- Public Routes (Login/Register) --- */}
+        <Route element={<PublicLayout />}>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/" element={<Navigate to="/login" />} /> {/* Default to login */}
+        </Route>
+
+        {/* --- Protected Routes (The App) --- */}
+        <Route element={<ProtectedLayout />}>
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dataset" element={<Dataset />} />
+          <Route path="/overview" element={<Overview />} />
+          <Route path="/distribution" element={<DistributionPage />} />
+          <Route path="/forecasting" element={<ForecastingPage />} />
+          <Route path="/recommendation" element={<RecommendationPage />} />
+        </Route>
+
+      </Routes>
     </Router>
   );
 }

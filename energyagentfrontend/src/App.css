@@ -24,11 +24,18 @@ body {
   bottom: 0;
   padding-top: 20px;
   overflow-y: auto;
+  /* --- ADD THIS --- */
+  display: flex;
+  flex-direction: column;
+  /* -------------- */
 }
 
 .sidebar ul {
   list-style: none;
   padding: 0;
+  /* --- ADD THIS --- */
+  flex-grow: 1; /* This pushes the logout button down */
+  /* -------------- */
 }
 
 .sidebar ul li {
@@ -52,9 +59,43 @@ body {
 .page-container {
   flex: 1;
   margin-left: 220px; /* same as sidebar width */
-  padding: 20px;
   overflow-y: auto;
   height: 100vh;
   box-sizing: border-box;
-  background-color: #fff;
 }
+
+/* --- New Logout Button Style --- */
+.sidebar-footer {
+  padding: 20px;
+  margin-top: auto; /* This pushes it to the bottom */
+}
+
+.logout-button-sidebar {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  background-color: #e53e3e; /* Red */
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.logout-button-sidebar:hover {
+  background-color: #c53030; /* Darker red */
+}
+/* ... (all your other styles) ... */
+
+/* === Main Page Content === */
+.page-container {
+  flex: 1;
+  margin-left: 220px; /* same as sidebar width */
+  overflow-y: auto;
+  height: 100vh;
+  box-sizing: border-box;
+  padding: 0; /* <-- MAKE SURE THIS IS 0 */
+}
+
+/* ... (rest of your styles) ... */
