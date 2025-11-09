@@ -1,211 +1,238 @@
-.dataset-container {
-  padding: 2rem;
-  max-width: 900px;
-  margin: 0 auto;
+/* Dataset.css */
+
+.dataset-page {
+    padding: 20px;
 }
 
-/* --- Tab Buttons --- */
-.tab-buttons {
-  display: flex;
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid #cbd5e0;
+/* --- Messages --- */
+.message {
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    font-weight: 500;
+}
+.message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+.message.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
 }
 
-.tab-button {
-  padding: 0.75rem 1.5rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  border: none;
-  background-color: transparent;
-  color: #718096;
-  cursor: pointer;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -2px; /* Aligns with the container's border */
+/* --- Actions --- */
+.dataset-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
 }
 
-.tab-button.active {
-  color: #3182ce;
-  border-bottom-color: #3182ce;
+.action-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    background: #f9f9f9;
 }
 
-/* --- Upload Box (for file upload) --- */
-.upload-box {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
-  padding: 2.5rem;
-  text-align: center;
+.action-card h3 {
+    margin-top: 0;
 }
 
-.upload-box h2 {
-  font-size: 2rem;
-  color: #1a202c;
-  margin-top: 0;
-  margin-bottom: 2rem;
+.form-group {
+    margin-bottom: 15px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box; /* Important for 100% width */
 }
 
-.file-input-wrapper {
-  margin-bottom: 1.5rem;
+/* --- Main Data Table --- */
+.data-table-container {
+    width: 100%;
+    overflow-x: auto; /* Makes table scrollable on small screens */
+    border: 1px solid #ddd;
+    border-radius: 8px;
 }
 
-input[type="file"] {
-  display: none;
+table {
+    width: 100%;
+    border-collapse: collapse;
 }
 
-.file-input-label {
-  background-color: #edf2f7;
-  color: #2d3748;
-  border: 2px dashed #cbd5e0;
-  border-radius: 8px;
-  padding: 2rem;
-  cursor: pointer;
-  display: block;
-  transition: all 0.2s ease;
+th, td {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
 }
 
-.file-input-label:hover {
-  background-color: #e2e8f0;
-  border-color: #a0aec0;
+th {
+    background-color: #f4f4f4;
 }
 
-.file-name {
-  margin-top: 1rem;
-  font-size: 1rem;
-  color: #4a5568;
-  font-weight: 500;
+tbody tr:hover {
+    background-color: #f9f9f9;
 }
 
-.upload-button {
-  width: 100%;
-  padding: 0.85rem;
-  border: none;
-  border-radius: 8px;
-  background-color: #3182ce;
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
+/* --- NEW STYLES FOR ADVANCED MODAL --- */
+
+/* Modal Backdrop */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.upload-button:disabled {
-  background-color: #a0aec0;
-  cursor: not-allowed;
+/* Modal Content Box */
+.modal-content {
+    background-color: #fefefe;
+    padding: 20px;
+    border: 1px solid #888;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+}
+/* A bigger modal for your advanced form */
+.modal-content.large {
+    max-width: 800px;
 }
 
-.upload-button:not(:disabled):hover {
-  background-color: #2b6cb0;
+
+/* Modal Close Button */
+.close {
+    color: #aaa;
+    position: absolute;
+    right: 20px;
+    top: 10px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
 }
 
-/* --- Manual Entry Form --- */
-.manual-entry-container {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
-  padding: 2.5rem;
-}
-
-.manual-entry-container h2 {
-  font-size: 2rem;
-  color: #1a202c;
-  margin-top: 0;
-  margin-bottom: 2rem;
-}
-
+/* Modal Form Row (from your code) */
 .form-row {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  align-items: center;
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
 }
-
 .form-row input {
-  font-size: 1rem;
-  padding: 0.75rem;
-  border: 1px solid #cbd5e0;
-  border-radius: 6px;
-  flex-grow: 1;
+    flex: 1;
+    padding: 8px;
 }
-
 .add-row-button {
-  padding: 0.75rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  background-color: #3182ce;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.2s;
+    flex: 1;
+    background-color: #28a745;
+    color: white;
 }
 
-.add-row-button:hover {
-  background-color: #2b6cb0;
+/* Modal Preview Table */
+.modal-table-container {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-top: 10px;
 }
-
-/* --- Data Table --- */
 .data-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 2rem;
-  margin-bottom: 2rem;
+    width: 100%;
 }
-
-.data-table th,
-.data-table td {
-  padding: 0.75rem 1rem;
-  border: 1px solid #e2e8f0;
-  text-align: left;
+.data-table strong {
+    color: #0056b3;
 }
-
-.data-table th {
-  background-color: #f7fafc;
-  font-weight: 600;
-}
-
 .delete-button {
-  background: none;
-  border: none;
-  color: #e53e3e;
-  cursor: pointer;
-  font-size: 1.2rem;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
 }
 
-.delete-button:hover {
-  color: #c53030;
-}
-
+/* Modal Submit Button (from your code) */
 .submit-manual-button {
-  width: 100%;
-  padding: 0.85rem;
-  border: none;
-  border-radius: 8px;
-  background-color: #28a745; /* Green */
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: white;
+    margin-top: 20px;
+}
+.submit-manual-button:disabled {
+    background-color: #ccc;
+}
+/* --- NEW STYLES FOR DELETE FUNCTION --- */
+
+.delete-selected-button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+.delete-selected-button:hover {
+    background-color: #c82333;
 }
 
-.submit-manual-button:hover {
-  background-color: #218838;
+/* Highlight selected rows */
+tbody tr.selected-row {
+    background-color: #fff3cd !important;
 }
 
-/* --- Message styles --- */
-.upload-message {
-  margin-top: 1.5rem;
-  font-size: 1rem;
-  padding: 0.75rem;
-  border-radius: 6px;
+/* --- NEW STYLES FOR TABLE CONTROLS --- */
+
+.data-table-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap; /* Allows wrapping on small screens */
+    gap: 15px;
 }
 
-.success {
-  background-color: #d4edda;
-  color: #155724;
+.select-by-date {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.error {
-  background-color: #f8d7da;
-  color: #721c24;
+.select-by-date label {
+    font-weight: 600;
+}
+
+.select-by-date input[type="date"] {
+    padding: 5px;
+}
+
+/* Make messages clickable to dismiss */
+.message {
+    cursor: pointer;
 }
