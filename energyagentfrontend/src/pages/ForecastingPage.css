@@ -1,48 +1,39 @@
-.forecasting-container {
-  padding: 20px;
-  color: #222;
-}
-
-.forecast-btn {
-  margin-top: 10px;
-  padding: 8px 14px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.forecast-btn:hover {
-  background-color: #0056b3;
-}
-
-.response-box {
-  background: #f9f9f9;
-  padding: 10px;
-  border-radius: 6px;
-  margin-top: 15px;
-  white-space: pre-wrap;
-}
-
-.chart-container {
-  margin-top: 30px;
-}
-
-.forecast-table {
+/* Make the main container fill the whole page-container */
+.forecast-container {
+  padding: 0; /* Remove padding */
+  margin: 0;
   width: 100%;
-  border-collapse: collapse;
-  margin-top: 30px;
-  background: white;
+  height: 100%; /* Fill the 100vh from App.css */
+  display: flex; /* Use flexbox to center messages */
+  justify-content: center;
+  align-items: center;
 }
 
-.forecast-table th,
-.forecast-table td {
-  border: 1px solid #ddd;
-  padding: 8px;
+/* Make the chart wrapper fill the container */
+.chart-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%; 
+  padding: 1.5rem; /* Add padding *inside* the wrapper */
+  box-sizing: border-box; /* Include padding in the width/height */
+  background: #ffffff;
+  /* NO max-width or margin: auto here */
+}
+
+/* Keep these error styles */
+.loading-message {
+  font-size: 1.2rem;
+  color: #2b6cb0;
   text-align: center;
+  padding: 2rem;
 }
 
-.forecast-table th {
-  background-color: #f2f2f2;
+.error-message {
+  font-size: 1.2rem;
+  color: #c53030;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
 }

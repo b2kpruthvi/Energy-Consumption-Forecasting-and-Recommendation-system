@@ -1,33 +1,43 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import "./Sidebar.css";
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+// We don't import Sidebar.css. App.css handles all styling.
 
 const Sidebar = () => {
-  const [isOpen, setIsOpen] = useState(false); // hidden by default
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    navigate("/login");
+  };
 
   return (
-    <>
-      {/* Toggle Button */}
-      <button className="sidebar-toggle" onClick={() => setIsOpen(!isOpen)}>
-        ☰
-      </button>
+    // The main 'nav' tag now has the "sidebar" class
+    <nav className="sidebar">
+      
+      {/* Sidebar title */}
+      <h2 style={{ textAlign: 'center', color: '#ecf0f1', marginBottom: '20px' }}>
+      ⚡Energy Agent
+      </h2>
+      
+      {/* Links */}
+      <ul>
+        <li><Link to="/home">Home</Link></li>
+        <li><Link to="/dataset">Dataset Upload</Link></li>
+        <li><Link to="/overview">Overview</Link></li>
+        <li><Link to="/distribution">Distribution</Link></li>
+        <li><Link to="/forecasting">Forecasting</Link></li>
+        <li><Link to="/recommendation">Recommendation</Link></li>
+        <li><Link to="/dashboard">Dashboard</Link></li>
+      </ul>
+      
+      {/* --- This is the Logout Button --- */}
+      <div className="sidebar-footer">
+        <button className="logout-button-sidebar" onClick={handleLogout}>
+          Logout
+        </button>
+      </div>
 
-      {/* Sidebar */}
-      <nav className={`sidebar ${isOpen ? "open" : "closed"}`}>
-        <h2 className="sidebar-title">⚡ Energy Agent</h2>
-        <ul>
-          <li><Link to="/dataset" onClick={() => setIsOpen(false)}>Dataset Upload</Link></li>
-          <li><Link to="/overview" onClick={() => setIsOpen(false)}>Overview</Link></li>
-          <li><Link to="/distribution" onClick={() => setIsOpen(false)}>Distribution</Link></li>
-          <li><Link to="/forecasting" onClick={() => setIsOpen(false)}>Forecasting</Link></li>
-          <li><Link to="/recommendation" onClick={() => setIsOpen(false)}>Recommendation</Link></li>
-          <li><a href="/dashboard">Dashboard</a></li>
-        </ul>
-      </nav>
-
-      {/* Page overlay when sidebar is open */}
-      {isOpen && <div className="overlay" onClick={() => setIsOpen(false)}></div>}
-    </>
+    </nav>
   );
 };
 

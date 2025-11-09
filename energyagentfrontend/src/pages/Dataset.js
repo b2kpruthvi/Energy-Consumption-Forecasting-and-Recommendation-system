@@ -1,76 +1,33 @@
-// src/pages/Dataset.js
-import React, { useState } from "react";
+import React, { useState } from 'react';
+import './Dataset.css'; // Import the main CSS
+// import FileUploadComponent from './FileUploadComponent'; // We don't need this anymore
+import ManualEntryComponent from './ManualEntryComponent';
 
 const Dataset = () => {
-  const [previewTable, setPreviewTable] = useState("");
-
-  const handleUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) {
-      alert("Please select a file.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const content = ev.target.result.trim();
-      const rows = content.split("\n").map((row) => row.split(","));
-
-      if (rows.length < 2) {
-        alert("Invalid or empty dataset.");
-        return;
-      }
-
-      // Save dataset to localStorage
-      localStorage.setItem("dataset", JSON.stringify(rows));
-
-      // Build HTML preview
-      const tableHtml = `
-        <table border='1'>
-          ${rows
-            .slice(0, 6)
-            .map(
-              (row) =>
-                `<tr>${row.map((cell) => `<td>${cell.trim()}</td>`).join("")}</tr>`
-            )
-            .join("")}
-        </table>
-      `;
-      setPreviewTable(tableHtml);
-
-      alert("✅ Dataset uploaded successfully!");
-    };
-
-    reader.readAsText(file);
-  };
-
+  // const [activeTab, setActiveTab] = useState('upload'); // Default to manual entry
+  
   return (
-    <div className="page-container">
-      {/* Sidebar */}
-      <nav className="sidebar">
-        <ul>
-          <li><a href="/dataset">Dataset Upload</a></li>
-          <li><a href="/overview">Overview</a></li>
-          <li><a href="/distribution">Distribution</a></li>
-          <li><a href="/forecasting">Forecasting</a></li>
-          <li><a href="/recommendation">Recommendation</a></li>
-          <li><a href="/prediction">Prediction</a></li>
-        </ul>
-      </nav>
+    <div className="dataset-container">
+      {/* --- Tab Navigation (Hidden) --- */}
+      {/* <div className="tab-buttons">
+        <button
+          className={`tab-button ${activeTab === 'upload' ? 'active' : ''}`}
+          onClick={() => setActiveTab('upload')}
+        >
+          Upload File
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'manual' ? 'active' : ''}`}
+          onClick={() => setActiveTab('manual')}
+        >
+          Enter Data Manually
+        </button>
+      </div> 
+      */}
 
-      {/* Main Content */}
-      <main className="content">
-        <h2>Upload Dataset</h2>
-        <div className="upload-container">
-          <input type="file" accept=".csv,.xlsx" onChange={handleUpload} />
-        </div>
-
-        <h3>Preview Data</h3>
-        <div
-          id="previewContainer"
-          dangerouslySetInnerHTML={{ __html: previewTable }}
-        ></div>
-      </main>
+      {/* --- Show Manual Entry by default --- */}
+      <ManualEntryComponent />
+      
     </div>
   );
 };
