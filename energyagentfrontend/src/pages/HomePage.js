@@ -1,3 +1,4 @@
+// energyagentfrontend/src/pages/HomePage.js
 import React from "react";
 import { useNavigate, Link } from "react-router-dom"; // Import Link
 import "./HomePage.css"; // Import our new CSS
@@ -27,7 +28,6 @@ const HomePage = () => {
 
       {/* --- INTERACTIVE CARDS --- */}
       <div className="card-grid">
-        
         {/* Card 1: Upload */}
         <Link to="/dataset" className="nav-card">
           <div className="card-icon">📤</div>
@@ -41,7 +41,7 @@ const HomePage = () => {
           <h3>Data Overview</h3>
           <p>View statistics and a summary of your uploaded data.</p>
         </Link>
-        
+
         {/* Card 3: Forecasting */}
         <Link to="/forecasting" className="nav-card">
           <div className="card-icon">📈</div>
@@ -62,14 +62,13 @@ const HomePage = () => {
           <h3>Distribution</h3>
           <p>Analyze the distribution of your energy data points.</p>
         </Link>
-        
+
         {/* Card 6: Dashboard */}
         <Link to="/dashboard" className="nav-card">
           <div className="card-icon">🖥️</div>
           <h3>Main Dashboard</h3>
           <p>See all your key metrics in one comprehensive view.</p>
         </Link>
-
       </div>
     </div>
   );
