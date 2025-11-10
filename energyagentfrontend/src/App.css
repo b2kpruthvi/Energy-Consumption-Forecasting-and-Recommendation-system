@@ -12,7 +12,6 @@ body {
   background-color: #f9f9f9;
 }
 
-
 /* Sidebar styles */
 .sidebar {
   width: 220px;
@@ -24,18 +23,14 @@ body {
   bottom: 0;
   padding-top: 20px;
   overflow-y: auto;
-  /* --- ADD THIS --- */
   display: flex;
   flex-direction: column;
-  /* -------------- */
 }
 
 .sidebar ul {
   list-style: none;
   padding: 0;
-  /* --- ADD THIS --- */
   flex-grow: 1; /* This pushes the logout button down */
-  /* -------------- */
 }
 
 .sidebar ul li {
@@ -62,7 +57,12 @@ body {
   overflow-y: auto;
   height: 100vh;
   box-sizing: border-box;
+  
+  /* --- THIS IS THE KEY FIX --- */
+  /* This adds a 2rem border inside your content area */
+  padding: 2rem; 
 }
+
 
 /* --- New Logout Button Style --- */
 .sidebar-footer {
@@ -86,16 +86,15 @@ body {
 .logout-button-sidebar:hover {
   background-color: #c53030; /* Darker red */
 }
-/* ... (all your other styles) ... */
+/* In App.css */
 
-/* === Main Page Content === */
 .page-container {
   flex: 1;
   margin-left: 220px; /* same as sidebar width */
   overflow-y: auto;
   height: 100vh;
   box-sizing: border-box;
-  padding: 0; /* <-- MAKE SURE THIS IS 0 */
+  
+  /* --- ADD THIS LINE --- */
+  padding: 2rem; 
 }
-
-/* ... (rest of your styles) ... */

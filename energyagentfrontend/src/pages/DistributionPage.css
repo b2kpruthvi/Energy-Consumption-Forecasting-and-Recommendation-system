@@ -1,12 +1,15 @@
+/* Remove padding, the parent .page-container has it */
 .distribution-container {
-  padding: 20px;
+  padding: 0;
 }
 
+/* Let the chart section fill the new container */
 .chart-section {
-  width: 90%;
-  margin: auto;
+  width: 100%; /* <-- CHANGED from 90% */
+  margin: 0;   /* <-- CHANGED from auto */
 }
 
+/* --- Modal styles (unchanged) --- */
 .modal-overlay {
   position: fixed;
   inset: 0;

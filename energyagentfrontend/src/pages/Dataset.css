@@ -236,3 +236,53 @@ tbody tr.selected-row {
 .message {
     cursor: pointer;
 }
+
+/* --- ADD THESE STYLES to the end of Dataset.css --- */
+
+/* New layout for Hours -> Units */
+.appliance-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.appliance-row input {
+    flex: 1; /* Both inputs take equal space */
+}
+
+/* Style for the '→' arrow */
+.appliance-row .arrow {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #555;
+    flex: 0 0 auto; /* Don't grow or shrink */
+}
+
+.data-table-card {
+    /* Example: This stops the card from ever being wider than 1200px */
+    max-width: 10000px;
+
+    /* It will still be 100% wide on smaller screens */
+    width: 100%;
+}
+
+/* --- ADD THESE STYLES to the end of Dataset.css --- */
+
+/* New layout for Hours -> Units */
+.appliance-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.appliance-row input {
+    flex: 1; /* Both inputs take equal space */
+}
+
+/* Style for the '→' arrow */
+.appliance-row .arrow {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #555;
+    flex: 0 0 auto; /* Don't grow or shrink */
+}

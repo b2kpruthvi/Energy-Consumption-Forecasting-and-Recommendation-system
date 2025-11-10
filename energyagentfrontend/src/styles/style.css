@@ -1,150 +1,13 @@
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    display: flex;
-}
+/* This file is for Dashboard, Dataset, and Overview.
+  All layout-breaking rules have been removed.
+*/
 
-header {
-    width: 100%;
-    padding: 15px;
-    background-color: #2c3e50;
-    color: #fff;
-    position: fixed;
-    top: 0;
-    left: 0;
-}
-
-.sidebar {
-    width: 220px;
-    height: 100vh;
-    background-color: #34495e;
-    padding-top: 80px;
-    position: fixed;
-}
-
-.sidebar ul {
-    list-style: none;
-    padding: 0;
-}
-
-.sidebar ul li a {
-    display: block;
-    padding: 12px;
-    color: white;
-    text-decoration: none;
-}
-
-.sidebar ul li a:hover {
-    background-color: #1abc9c;
-}
-
-main {
-    margin-left: 240px;
-    padding: 100px 20px;
-}
-.upload-container {
-    background: #f4f4f4;
-    padding: 20px;
-    border-radius: 10px;
-    width: 300px;
-    text-align: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-button {
-    padding: 8px 15px;
-    margin-top: 10px;
-    border: none;
-    background: #1abc9c;
-    color: white;
-    cursor: pointer;
-    border-radius: 5px;
-}
-button:hover {
-    background: #16a085;
-}
-table {
-    border-collapse: collapse;
-    width: 80%;
-    margin-top: 20px;
-}
-table, th, td {
-    border: 1px solid #ccc;
-    padding: 8px;
-}
-.summary-container {
-    display: flex;
-    gap: 20px;
-}
-
-.card {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    width: 200px;
-    text-align: center;
-}
-
-.card h3 {
-    margin-bottom: 10px;
-    color: #2c3e50;
-}
-
-.card p {
-    font-size: 20px;
-    font-weight: bold;
-}
+/* --- General Page Wrappers (for Overview, etc.) --- */
+/* REMOVED 'padding' to respect the global App.css padding */
 .overview-main {
-  padding: 2rem;
-  background: #f9fafb;
-  min-height: 100vh;
-}
-
-.overview-title {
-  font-size: 1.8rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
-  color: #1e3a8a;
-}
-
-.summary-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  flex: 1;
-  min-width: 200px;
-  padding: 1.5rem;
-  text-align: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.card.highlight {
-  background: #2563eb;
-  color: white;
-}
-
-.chart-section {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-.overview-main {
-  padding: 2rem;
   background: #f8fafc;
-  min-height: 100vh;
+  min-height: 100%; /* Changed from 100vh */
+  width: 100%;
 }
 
 .overview-title {
@@ -154,6 +17,7 @@ table, th, td {
   color: #1e3a8a;
 }
 
+/* --- Summary Cards (for Dashboard/Overview) --- */
 .summary-container {
   display: flex;
   flex-wrap: wrap;
@@ -177,24 +41,89 @@ table, th, td {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+.card h3 {
+  margin-bottom: 10px;
+  color: #2c3e50;
+}
+
+.card p {
+  font-size: 20px;
+  font-weight: bold;
+}
+
 .card.highlight {
   background: #2563eb;
   color: white;
 }
 
+/* --- Chart Sections (for Overview/Dashboard) --- */
+/* REMOVED 'max-width' and 'margin' to fill the container */
 .chart-section {
   background: white;
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 1200px;
-  margin: auto;
+  margin: 0; /* Changed from auto */
 }
-
 
 .chart-section h3 {
   margin-bottom: 1rem;
   font-weight: 600;
   color: #111827;
 }
+
+/* --- Dataset Page: Upload Container --- */
+.upload-container {
+  background: #f4f4f4;
+  padding: 20px;
+  border-radius: 10px;
+  width: 100%; /* Make it responsive */
+  max-width: 400px; /* Set a max-width */
+  margin: 0 auto 20px auto; /* Center it */
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* --- General Table Styles --- */
+table {
+  border-collapse: collapse;
+  width: 100%; /* Changed from 80% */
+  margin-top: 20px;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+table, th, td {
+  border: 1px solid #ccc;
+  padding: 10px;
+  text-align: left;
+}
+
+th {
+  background-color: #f4f4f4;
+  color: #333;
+}
+
+/* --- General Button Styles --- */
+button {
+  padding: 10px 18px;
+  margin-top: 10px;
+  border: none;
+  background: #1abc9c;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background: #16a085;
+}
+
+/* REMOVED the 'header', 'body', 'sidebar', and 'main' rules
+  as they conflict with the main App.css layout.
+*/
