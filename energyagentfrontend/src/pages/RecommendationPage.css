@@ -1,0 +1,171 @@
+/* --- PAGE CONTAINER --- */
+.recommendation-page {
+  min-height: 100vh;
+  width: 100%;
+  padding: 2rem;
+  background: radial-gradient(circle at top left, #0b1221, #111827);
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+}
+
+/* --- HEADER --- */
+.recommendation-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  animation: fadeInDown 1s ease;
+}
+
+.recommendation-header h2 {
+  font-size: 2.2rem;
+  color: #00ffe0;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  margin-bottom: 0.5rem;
+}
+
+.recommendation-header p {
+  color: #a5b4fc;
+  font-size: 1.05rem;
+}
+
+/* --- RECOMMENDATION GRID --- */
+.recommendation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.8rem;
+  width: 100%;
+  max-width: 1200px;
+  animation: fadeInUp 1s ease;
+}
+
+/* --- CARD DESIGN --- */
+.recommendation-card {
+  background: rgba(180, 149, 149, 0.08);
+  border-radius: 16px;
+  padding: 1.8rem;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.recommendation-card:hover {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 12px 30px rgba(0, 255, 255, 0.25);
+}
+
+/* --- ICON SECTION --- */
+.icon-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.icon {
+  font-size: 2.5rem;
+  color: #00ffe0;
+  animation: pulseGlow 2s infinite alternate;
+}
+
+/* --- CARD CONTENT --- */
+.recommendation-card h3 {
+  color: #00ffe0;
+  font-size: 1.4rem;
+  margin-bottom: 0.8rem;
+}
+
+.stats {
+  text-align: left;
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.stat-icon {
+  color: #00bcd4;
+  margin-right: 6px;
+}
+
+.usage-msg,
+.unit-msg {
+  color: #cbd5e0;
+  margin: 8px 0;
+  line-height: 1.5;
+}
+
+/* --- INSIGHT BOX --- */
+.insight-box {
+  margin-top: 1rem;
+  background: rgba(0, 255, 255, 0.08);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  padding: 0.8rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  color: #00ffe0;
+  font-weight: 600;
+}
+
+.insight-icon {
+  font-size: 1.2rem;
+}
+
+/* --- NO DATA MESSAGE --- */
+.no-data {
+  color: #a5b4fc;
+  font-size: 1.1rem;
+  text-align: center;
+  grid-column: 1 / -1;
+}
+
+/* --- ANIMATIONS --- */
+@keyframes pulseGlow {
+  from {
+    text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+  }
+  to {
+    text-shadow: 0 0 20px rgba(0, 255, 255, 0.9);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+  .recommendation-header h2 {
+    font-size: 1.8rem;
+  }
+  .recommendation-card {
+    padding: 1.2rem;
+  }
+  .insight-box {
+    font-size: 0.9rem;
+  }
+}

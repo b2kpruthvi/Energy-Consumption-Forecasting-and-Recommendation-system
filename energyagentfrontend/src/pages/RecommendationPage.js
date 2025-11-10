@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { FaBolt, FaRegClock, FaLightbulb, FaChargingStation } from "react-icons/fa";
+import "./RecommendationPage.css";
 
 function RecommendationPage() {
   const [recommendations, setRecommendations] = useState([]);
@@ -44,7 +46,6 @@ function RecommendationPage() {
             combined.push(found);
           }
 
-          // Extract numeric values (e.g., “3.5 hours” or “12 kWh”)
           const numericMatch = rec.recommendation.match(/(\d+(\.\d+)?)/);
           const numericValue = numericMatch ? parseFloat(numericMatch[1]) : null;
 
@@ -57,106 +58,76 @@ function RecommendationPage() {
           }
         });
 
-        // Add smart recommendation logic
         const finalData = combined.map((item) => {
           let insight = "";
 
-          // Example logic: modify based on usage intensity
           if (item.avgUsage && item.avgUsage > 8) {
-            insight = "⚠️ High daily usage — try using it during off-peak hours or reduce runtime.";
+            insight = "⚠️ High usage — consider using during off-peak hours.";
           } else if (item.avgUsage && item.avgUsage < 2) {
-            insight = "✅ Great efficiency — appliance is used optimally!";
+            insight = "✅ Excellent efficiency — keep it up!";
           } else {
-            insight = "💡 Moderate usage — maintain current schedule for balanced energy consumption.";
+            insight = "💡 Balanced usage — maintain your current schedule.";
           }
 
           if (item.avgUnits && item.avgUnits > 5) {
-            insight += " Consider energy-saving models or switching it off completely when idle.";
+            insight += " Try energy-saving settings or newer models.";
           }
 
           return { ...item, insight };
         });
 
         setRecommendations(finalData);
-        setMessage("✅ Detailed energy insights generated!");
+        setMessage("✅ Recommendations ready!");
       })
       .catch(() => setMessage("❌ Failed to fetch recommendations."));
   }, []);
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2 style={{ textAlign: "center" }}>⚡ Appliance-wise Energy Recommendations</h2>
-      <p style={{ textAlign: "center", color: "#555" }}>{message}</p>
+    <div className="recommendation-page">
+      <header className="recommendation-header">
+        <h2>⚡ Smart Appliance Recommendations</h2>
+        <p>{message}</p>
+      </header>
 
-      {recommendations.length > 0 && (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-            gap: "20px",
-            marginTop: "30px",
-          }}
-        >
-          {recommendations.map((rec, index) => (
-            <div
-              key={index}
-              style={{
-                background: "white",
-                borderRadius: "14px",
-                padding: "22px",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-                transition: "transform 0.2s, box-shadow 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-5px)";
-                e.currentTarget.style.boxShadow = "0 6px 12px rgba(0,0,0,0.15)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "translateY(0)";
-                e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.1)";
-              }}
-            >
-              <h3 style={{ color: "#4CAF50", marginBottom: "10px" }}>
-                {rec.appliance}
-              </h3>
+      <div className="recommendation-grid">
+        {recommendations.length > 0 ? (
+          recommendations.map((rec, index) => (
+            <div key={index} className="recommendation-card">
+              <div className="icon-section">
+                <FaBolt className="icon" />
+              </div>
+              <h3>{rec.appliance}</h3>
 
-              {rec.avgUsage && (
-                <p style={{ margin: "6px 0", color: "#444" }}>
-                  ⏱️ <strong>Avg Usage:</strong> {rec.avgUsage} hours/day
-                </p>
-              )}
-              {rec.avgUnits && (
-                <p style={{ margin: "6px 0", color: "#444" }}>
-                  ⚡ <strong>Avg Consumption:</strong> {rec.avgUnits} kWh/day
-                </p>
-              )}
+              <div className="stats">
+                {rec.avgUsage && (
+                  <p>
+                    <FaRegClock className="stat-icon" /> <strong>Avg Usage:</strong>{" "}
+                    {rec.avgUsage} hrs/day
+                  </p>
+                )}
+                {rec.avgUnits && (
+                  <p>
+                    <FaChargingStation className="stat-icon" />{" "}
+                    <strong>Avg Consumption:</strong> {rec.avgUnits} kWh/day
+                  </p>
+                )}
+              </div>
 
-              {rec.usageMessage && (
-                <p style={{ color: "#555", marginTop: "10px" }}>
-                  💡 {rec.usageMessage}
-                </p>
-              )}
+              {rec.usageMessage && <p className="usage-msg">💡 {rec.usageMessage}</p>}
               {rec.unitMessage && (
-                <p style={{ color: "#777", marginTop: "5px", fontSize: "0.95em" }}>
-                  🔋 {rec.unitMessage}
-                </p>
+                <p className="unit-msg">🔋 {rec.unitMessage}</p>
               )}
 
-              <p
-                style={{
-                  marginTop: "12px",
-                  background: "#f8f9fa",
-                  padding: "10px",
-                  borderRadius: "8px",
-                  color: "#333",
-                }}
-              >
-                {rec.insight}
-              </p>
+              <div className="insight-box">
+                <FaLightbulb className="insight-icon" />
+                <p>{rec.insight}</p>
+              </div>
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        ) : (
+          <p className="no-data">No recommendations available yet.</p>
+        )}
+      </div>
     </div>
   );
 }

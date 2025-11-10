@@ -1,9 +1,10 @@
 import React from 'react';
-import './App.css'; // This is your new CSS
+import './App.css'; // This is your main CSS
 import { BrowserRouter as Router, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 
 // Import all your pages
-import Sidebar from './pages/Sidebar';
+import Navbar from './pages/Navbar'; // <-- Import new Navbar
+// import Sidebar from './pages/Sidebar'; // <-- We no longer need Sidebar
 import HomePage from './pages/HomePage';
 import Dashboard from './pages/Dashboard';
 import Dataset from './pages/Dataset';
@@ -21,7 +22,7 @@ const useAuth = () => {
 };
 
 // --- This is our new Layout Component ---
-// It shows the Sidebar and the page content next to it
+// It renders the Navbar at the top, and the page content below it
 const ProtectedLayout = () => {
   const isAuth = useAuth();
 
@@ -31,16 +32,16 @@ const ProtectedLayout = () => {
   }
 
   return (
-    <div className="app-container">
-      <Sidebar />
-      <div className="page-container">
+    <div className="app-layout">
+      <Navbar />
+      <div className="app-content">
         <Outlet /> {/* This renders the current page (e.g., HomePage) */}
       </div>
     </div>
   );
 };
 
-// --- This layout is for public pages (no sidebar) ---
+// --- This layout is for public pages (no navbar) ---
 const PublicLayout = () => {
   return (
     <div>
@@ -65,9 +66,11 @@ function App() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dataset" element={<Dataset />} />
+          <Route path="/data" element={<Overview />} /> 
           <Route path="/overview" element={<Overview />} />
           <Route path="/distribution" element={<DistributionPage />} />
           <Route path="/forecasting" element={<ForecastingPage />} />
+          <Route path="/prediction" element={<ForecastingPage />} />
           <Route path="/recommendation" element={<RecommendationPage />} />
         </Route>
 

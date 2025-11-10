@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import "../styles/style.css";
+import "../pages/Overview.css";
 import {
   LineChart,
   Line,
@@ -34,8 +34,7 @@ function Overview() {
 
     const header = data[0];
     const rows = data.slice(1);
-
-    const dateIndex = 0; // assuming first column is date
+    const dateIndex = 0;
     const unitsIndex = header.indexOf("Units");
 
     if (unitsIndex === -1) {
@@ -44,165 +43,126 @@ function Overview() {
     }
 
     let totalEnergySum = 0;
-    const dailyUsage = {};
-    const monthlyUsage = {};
+    const daily = {};
+    const monthly = {};
 
-    rows.forEach((row) => {
-      const dateStr = row[dateIndex];
-      const units = parseFloat(row[unitsIndex]);
-      if (!isNaN(units) && dateStr) {
-        totalEnergySum += units;
+    rows.forEach((r) => {
+      const d = r[dateIndex];
+      const val = parseFloat(r[unitsIndex]);
+      if (isNaN(val) || !d) return;
 
-        // Daily usage
-        dailyUsage[dateStr] = (dailyUsage[dateStr] || 0) + units;
+      totalEnergySum += val;
+      daily[d] = (daily[d] || 0) + val;
 
-        // Monthly aggregation
-        const dateObj = new Date(dateStr);
-        if (!isNaN(dateObj)) {
-          const monthKey = `${dateObj.getFullYear()}-${String(
-            dateObj.getMonth() + 1
-          ).padStart(2, "0")}`;
-          monthlyUsage[monthKey] = (monthlyUsage[monthKey] || 0) + units;
-        }
+      const obj = new Date(d);
+      if (!isNaN(obj)) {
+        const key = `${obj.getFullYear()}-${String(obj.getMonth() + 1).padStart(2, "0")}`;
+        monthly[key] = (monthly[key] || 0) + val;
       }
     });
 
-    const totalDays = Object.keys(dailyUsage).length;
-    const avgEnergy = totalDays > 0 ? totalEnergySum / totalDays : 0;
-
+    const totalDays = Object.keys(daily).length;
     setTotalEnergy(totalEnergySum.toFixed(2));
-    setAverageEnergy(avgEnergy.toFixed(2));
+    setAverageEnergy((totalEnergySum / totalDays || 0).toFixed(2));
     setTotalRecords(rows.length);
 
-    // Convert daily usage to chart data
-    const chartArray = Object.entries(dailyUsage).map(([date, units]) => ({
-      date,
-      units,
-    }));
-    setChartData(chartArray);
+    const dailyArr = Object.entries(daily).map(([date, units]) => ({ date, units }));
+    const monthlyArr = Object.entries(monthly).map(([month, units]) => ({ month, units }));
 
-    // Convert monthly usage to chart data
-    const monthlyArray = Object.entries(monthlyUsage).map(([month, units]) => ({
-      month,
-      units,
-    }));
+    setChartData(dailyArr);
+    setMonthlyData(monthlyArr);
 
-    setMonthlyData(monthlyArray);
-
-    // Determine highest & lowest consumption months
-    if (monthlyArray.length > 0) {
-      const sorted = [...monthlyArray].sort((a, b) => b.units - a.units);
+    if (monthlyArr.length) {
+      const sorted = [...monthlyArr].sort((a, b) => b.units - a.units);
       setHighestMonth(`${sorted[0].month} (${sorted[0].units.toFixed(2)} kWh)`);
-      setLowestMonth(
-        `${sorted[sorted.length - 1].month} (${sorted[
-          sorted.length - 1
-        ].units.toFixed(2)} kWh)`
-      );
+      setLowestMonth(`${sorted.at(-1).month} (${sorted.at(-1).units.toFixed(2)} kWh)`);
     }
   }, []);
 
   return (
-    <div className="page-container">
-      {/* Sidebar */}
-      <nav className="sidebar">
-        <ul>
-          <li><a href="/dataset">Dataset Upload</a></li>
-          <li><a href="/overview" className="active">Overview</a></li>
-          <li><a href="/distribution">Distribution</a></li>
-          <li><a href="/forecasting">Forecasting</a></li>
-          <li><a href="/recommendation">Recommendation</a></li>
-          <li><a href="/prediction">Prediction</a></li>
-        </ul>
-      </nav>
+    <div className="overview-page">
+      <div className="page-header">
+        <h2>⚡ Energy Overview Dashboard</h2>
+        <p>Monitor your daily and monthly energy usage patterns.</p>
+      </div>
 
-      {/* Main Content */}
-      <main className="overview-main">
-        <h2 className="overview-title">📊 Energy Consumption Overview</h2>
-
-        {/* Summary Cards */}
-        <div className="summary-container">
-          <div className="card">
-            <h3>Average per Day</h3>
-            <p>{averageEnergy} kWh/day</p>
-          </div>
-          <div className="card">
-            <h3>Total Records</h3>
-            <p>{totalRecords}</p>
-          </div>
-          <div className="card info">
-            <h3>Highest Consumption Month</h3>
-            <p>{highestMonth || "—"}</p>
-          </div>
-          <div className="card info">
-            <h3>Lowest Consumption Month</h3>
-            <p>{lowestMonth || "—"}</p>
-          </div>
-          <div className="card highlight">
-            <h3>Total Energy</h3>
-            <p>{totalEnergy} kWh</p>
-          </div>
+      {/* Summary Cards */}
+      <div className="info-grid">
+        <div className="info-card highlight">
+          <h3>Total Energy</h3>
+          <p>{totalEnergy} kWh</p>
         </div>
-
-        {/* Daily Line Chart */}
-        <div className="chart-section">
-          <h3>📈 Daily Energy Usage Trend</h3>
-          {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={350}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis
-                  label={{
-                    value: "Units (kWh)",
-                    angle: -90,
-                    position: "insideLeft",
-                  }}
-                />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="units"
-                  stroke="#2563eb"
-                  strokeWidth={3}
-                  dot={{ r: 3 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <p>No daily chart data available</p>
-          )}
+        <div className="info-card">
+          <h3>Average / Day</h3>
+          <p>{averageEnergy} kWh</p>
         </div>
-
-        {/* Monthly Line Chart */}
-        <div className="chart-section">
-          <h3>📅 Monthly Energy Usage Trend</h3>
-          {monthlyData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={350}>
-              <LineChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis
-                  label={{
-                    value: "Units (kWh)",
-                    angle: -90,
-                    position: "insideLeft",
-                  }}
-                />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="units"
-                  stroke="#22c55e"
-                  strokeWidth={3}
-                  dot={{ r: 4 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <p>No monthly chart data available</p>
-          )}
+        <div className="info-card">
+          <h3>Total Records</h3>
+          <p>{totalRecords}</p>
         </div>
-      </main>
+        <div className="info-card">
+          <h3>Highest Month</h3>
+          <p>{highestMonth || "—"}</p>
+        </div>
+        <div className="info-card">
+          <h3>Lowest Month</h3>
+          <p>{lowestMonth || "—"}</p>
+        </div>
+      </div>
+
+      {/* Daily Chart */}
+      <section className="chart-section wide">
+        <h3>📈 Daily Energy Usage</h3>
+        <ResponsiveContainer width="100%" height={550}>
+          <LineChart data={chartData} margin={{ top: 30, right: 40, left: 20, bottom: 20 }}>
+            <defs>
+              <linearGradient id="dailyGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#00acc1" stopOpacity={0.9} />
+                <stop offset="95%" stopColor="#80deea" stopOpacity={0.2} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+            <XAxis dataKey="date" />
+            <YAxis />
+            <Tooltip />
+            <Line
+              type="monotone"
+              dataKey="units"
+              stroke="url(#dailyGradient)"
+              strokeWidth={4}
+              dot={false}
+              animationDuration={1800}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </section>
+
+      {/* Monthly Chart */}
+      <section className="chart-section wide">
+        <h3>📅 Monthly Energy Usage</h3>
+        <ResponsiveContainer width="100%" height={550}>
+          <LineChart data={monthlyData} margin={{ top: 30, right: 40, left: 20, bottom: 20 }}>
+            <defs>
+              <linearGradient id="monthlyGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#4caf50" stopOpacity={0.9} />
+                <stop offset="95%" stopColor="#a5d6a7" stopOpacity={0.2} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+            <XAxis dataKey="month" />
+            <YAxis />
+            <Tooltip />
+            <Line
+              type="monotone"
+              dataKey="units"
+              stroke="url(#monthlyGradient)"
+              strokeWidth={4}
+              dot={false}
+              animationDuration={1800}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </section>
     </div>
   );
 }

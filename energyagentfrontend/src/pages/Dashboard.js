@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import "../styles/style.css";
+import "./Dashboard.css";
 
 function Dashboard() {
   const [summary, setSummary] = useState({
@@ -46,11 +46,9 @@ function Dashboard() {
         const highest = months.reduce((a, b) => (a[1] > b[1] ? a : b), ["", 0]);
         const lowest = months.reduce((a, b) => (a[1] < b[1] ? a : b), ["", 0]);
 
-        // Fetch forecast data if available
         const forecastRes = await fetch("http://127.0.0.1:5000/forecast");
         const forecastData = await forecastRes.json();
 
-        // Fetch recommendations
         const recRes = await fetch("http://127.0.0.1:5000/recommendations");
         const recData = await recRes.json();
 
@@ -74,77 +72,62 @@ function Dashboard() {
   }, []);
 
   return (
-    <div className="page-container">
-      {/* Sidebar */}
-      <nav className="sidebar">
-        <ul>
-          <li><a href="/dataset">Dataset Upload</a></li>
-          <li><a href="/overview">Overview</a></li>
-          <li><a href="/distribution">Distribution</a></li>
-          <li><a href="/forecasting">Forecasting</a></li>
-          <li><a href="/recommendation">Recommendation</a></li>
-          <li><a href="/dashboard" className="active">Dashboard</a></li>
-        </ul>
-      </nav>
+    <div className="dashboard-container">
+      <header className="dashboard-header">
+        <h1>⚡ Energy Analytics Dashboard</h1>
+        <p>Insights, Trends, and Smart Recommendations</p>
+      </header>
 
-      {/* Main Dashboard */}
-      <main className="overview-main">
-        <h2 className="overview-title">📊 Energy Analytics Dashboard</h2>
-
-        {loading ? (
-          <p>Loading insights...</p>
-        ) : (
-          <>
-            {/* Summary Cards */}
-            <div className="summary-container">
-              <div className="card highlight">
-                <h3>Total Energy Used</h3>
-                <p>{summary.totalEnergy} kWh</p>
-              </div>
-              <div className="card">
-                <h3>Average Energy per Month</h3>
-                <p>{summary.averageEnergy} kWh</p>
-              </div>
-              <div className="card">
-                <h3>Highest Consumption</h3>
-                <p>{summary.highestMonth}</p>
-              </div>
-              <div className="card">
-                <h3>Lowest Consumption</h3>
-                <p>{summary.lowestMonth}</p>
-              </div>
-              <div className="card">
-                <h3>Forecasted Days</h3>
-                <p>{summary.forecastDays}</p>
-              </div>
+      {loading ? (
+        <div className="loading-shimmer">
+          <div className="shimmer-card"></div>
+          <div className="shimmer-card"></div>
+          <div className="shimmer-card"></div>
+        </div>
+      ) : (
+        <>
+          {/* Summary Cards */}
+          <div className="summary-grid">
+            <div className="summary-card glow">
+              <h3>Total Energy Used</h3>
+              <p>{summary.totalEnergy} kWh</p>
             </div>
-
-            {/* Recommendations Summary */}
-            <div className="chart-section">
-              <h3>💡 Key Energy Recommendations</h3>
-              {recommendations.length > 0 ? (
-                <ul style={{ listStyle: "none", padding: 0 }}>
-                  {recommendations.slice(0, 5).map((rec, i) => (
-                    <li
-                      key={i}
-                      style={{
-                        marginBottom: "12px",
-                        background: "#f9fafb",
-                        padding: "10px",
-                        borderRadius: "8px",
-                      }}
-                    >
-                      <strong>{rec.device}:</strong> {rec.message}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>No recommendations available.</p>
-              )}
+            <div className="summary-card">
+              <h3>Average per Month</h3>
+              <p>{summary.averageEnergy} kWh</p>
             </div>
-          </>
-        )}
-      </main>
+            <div className="summary-card">
+              <h3>Highest Month</h3>
+              <p>{summary.highestMonth}</p>
+            </div>
+            <div className="summary-card">
+              <h3>Lowest Month</h3>
+              <p>{summary.lowestMonth}</p>
+            </div>
+            <div className="summary-card">
+              <h3>Forecasted Days</h3>
+              <p>{summary.forecastDays}</p>
+            </div>
+          </div>
+
+          {/* Recommendations Section */}
+          <section className="recommendation-section">
+            <h2>💡 Smart Recommendations</h2>
+            {recommendations.length > 0 ? (
+              <ul className="recommendation-list">
+                {recommendations.slice(0, 5).map((rec, i) => (
+                  <li key={i} className="recommendation-item">
+                    <span className="device">{rec.device}</span>
+                    <p>{rec.message}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No recommendations available.</p>
+            )}
+          </section>
+        </>
+      )}
     </div>
   );
 }

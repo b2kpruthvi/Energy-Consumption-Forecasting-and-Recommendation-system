@@ -1,101 +1,14 @@
-/* === Sidebar Layout Fix === */
+/* === Basic Setup === */
 body {
   margin: 0;
   font-family: "Segoe UI", Arial, sans-serif;
-  background-color: #f5f6fa;
+  background-color: #f4f7f6; /* Light gray background */
 }
 
-.app-container {
-  display: flex;
-  min-height: 100vh;
-  overflow: hidden;
-  background-color: #f9f9f9;
-}
-
-
-/* Sidebar styles */
-.sidebar {
-  width: 220px;
-  background-color: #2c3e50;
-  color: white;
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  padding-top: 20px;
-  overflow-y: auto;
-  /* --- ADD THIS --- */
-  display: flex;
-  flex-direction: column;
-  /* -------------- */
-}
-
-.sidebar ul {
-  list-style: none;
-  padding: 0;
-  /* --- ADD THIS --- */
-  flex-grow: 1; /* This pushes the logout button down */
-  /* -------------- */
-}
-
-.sidebar ul li {
-  margin: 10px 0;
-}
-
-.sidebar ul li a {
-  color: white;
-  text-decoration: none;
-  display: block;
-  padding: 10px 20px;
-  border-radius: 6px;
-  transition: background 0.3s;
-}
-
-.sidebar ul li a:hover {
-  background-color: #34495e;
-}
-
-/* === Main Page Content === */
-.page-container {
-  flex: 1;
-  margin-left: 220px; /* same as sidebar width */
-  overflow-y: auto;
-  height: 100vh;
+/* === Main App Content Wrapper === */
+/* This adds the padding below the new 65px fixed navbar */
+.app-content {
+  padding: 2rem;
+  padding-top: calc(65px + 2rem); /* 65px Navbar + 2rem padding */
   box-sizing: border-box;
 }
-
-/* --- New Logout Button Style --- */
-.sidebar-footer {
-  padding: 20px;
-  margin-top: auto; /* This pushes it to the bottom */
-}
-
-.logout-button-sidebar {
-  width: 100%;
-  padding: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  color: white;
-  background-color: #e53e3e; /* Red */
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.logout-button-sidebar:hover {
-  background-color: #c53030; /* Darker red */
-}
-/* ... (all your other styles) ... */
-
-/* === Main Page Content === */
-.page-container {
-  flex: 1;
-  margin-left: 220px; /* same as sidebar width */
-  overflow-y: auto;
-  height: 100vh;
-  box-sizing: border-box;
-  padding: 0; /* <-- MAKE SURE THIS IS 0 */
-}
-
-/* ... (rest of your styles) ... */

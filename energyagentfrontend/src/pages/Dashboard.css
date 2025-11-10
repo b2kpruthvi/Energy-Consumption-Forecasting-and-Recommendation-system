@@ -1,0 +1,169 @@
+/* --- MAIN CONTAINER --- */
+.dashboard-container {
+  min-height: 100vh;
+  width: 100%;
+  background: radial-gradient(circle at top left, #0b1221, #111827);
+  color: #e2e8f0;
+  padding: 2rem;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+}
+
+/* --- HEADER --- */
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  animation: fadeInDown 1s ease;
+}
+
+.dashboard-header h1 {
+  font-size: 2.5rem;
+  color: #00ffe0;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-header p {
+  color: #a5b4fc;
+  font-size: 1.1rem;
+}
+
+/* --- SUMMARY GRID --- */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 1100px;
+  margin-bottom: 3rem;
+  animation: fadeInUp 1s ease;
+}
+
+/* --- INDIVIDUAL CARD --- */
+.summary-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.8rem;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.summary-card h3 {
+  color: #00ffe0;
+  font-size: 1.2rem;
+  margin-bottom: 0.8rem;
+}
+
+.summary-card p {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.summary-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 30px rgba(0, 255, 255, 0.3);
+}
+
+.summary-card.glow {
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.25);
+}
+
+/* --- RECOMMENDATION SECTION --- */
+.recommendation-section {
+  width: 100%;
+  max-width: 1100px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  animation: fadeInUp 1s ease;
+}
+
+.recommendation-section h2 {
+  text-align: center;
+  color: #00ffe0;
+  margin-bottom: 1.5rem;
+}
+
+.recommendation-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.recommendation-item {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.recommendation-item:hover {
+  background: rgba(0, 255, 255, 0.15);
+  transform: translateY(-4px);
+}
+
+.device {
+  display: inline-block;
+  color: #00ffe0;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+
+/* --- LOADING SHIMMER --- */
+.loading-shimmer {
+  display: flex;
+  gap: 1.2rem;
+  justify-content: center;
+  width: 100%;
+  margin-top: 4rem;
+}
+
+.shimmer-card {
+  width: 180px;
+  height: 120px;
+  background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
+  background-size: 200% 100%;
+  border-radius: 12px;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* --- ANIMATIONS --- */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+  .dashboard-header h1 {
+    font-size: 2rem;
+  }
+
+  .summary-card {
+    padding: 1.2rem;
+  }
+
+  .summary-card p {
+    font-size: 1.2rem;
+  }
+}

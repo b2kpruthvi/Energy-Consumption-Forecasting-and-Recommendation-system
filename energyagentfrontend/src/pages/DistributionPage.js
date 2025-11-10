@@ -1,4 +1,3 @@
-// src/pages/DistributionPage.js
 import React, { useEffect, useState } from "react";
 import { Bar, Line } from "react-chartjs-2";
 import {
@@ -11,6 +10,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import "./DistributionPage.css"; // Make sure this file exists in the same folder
 
 ChartJS.register(
   BarElement,
@@ -56,10 +56,7 @@ const DistributionPage = () => {
 
     const appliances = applianceCols.map((a) => ({
       label: a.name.split("(")[0],
-      total: rows.reduce(
-        (sum, row) => sum + parseFloat(row[a.index] || 0),
-        0
-      ),
+      total: rows.reduce((sum, row) => sum + parseFloat(row[a.index] || 0), 0),
     }));
 
     setApplianceData(appliances);
@@ -117,12 +114,12 @@ const DistributionPage = () => {
   };
 
   return (
-    <div className="page-container" style={{ padding: "20px" }}>
+    <div className="page-container">
       <h2>Appliance-wise Energy Distribution</h2>
 
       {/* Appliance Bar Chart */}
       {applianceData.length > 0 && (
-        <div style={{ maxWidth: "800px", margin: "auto" }}>
+        <div className="chart-card">
           <Bar
             data={{
               labels: applianceData.map((a) => a.label),
@@ -155,24 +152,17 @@ const DistributionPage = () => {
                 legend: { display: false },
               },
               scales: {
-                y: { beginAtZero: true, title: { display: true, text: "Units" } },
+                y: {
+                  beginAtZero: true,
+                  title: { display: true, text: "Units" },
+                },
               },
             }}
           />
 
           {/* View All Appliances Button */}
           <div style={{ textAlign: "center", marginTop: "20px" }}>
-            <button
-              onClick={() => setStackedVisible(true)}
-              style={{
-                background: "#2c3e50",
-                color: "white",
-                padding: "10px 20px",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-              }}
-            >
+            <button onClick={() => setStackedVisible(true)}>
               View Month-wise Stacked Chart
             </button>
           </div>
@@ -181,74 +171,46 @@ const DistributionPage = () => {
 
       {/* Month-wise Line Chart for selected appliance */}
       {monthWiseData && (
-        <div
-          style={{
-            marginTop: "40px",
-            background: "#f9f9f9",
-            padding: "20px",
-            borderRadius: "8px",
-          }}
-        >
+        <div className="chart-card wide">
           <h3>Month-wise Energy Usage — {selectedAppliance}</h3>
-          <div style={{ maxWidth: "800px", margin: "auto" }}>
-            <Line
-              data={{
-                labels: monthWiseData.labels,
-                datasets: [
-                  {
-                    label: `${selectedAppliance} (Units)`,
-                    data: monthWiseData.values,
-                    borderColor: "#2c3e50",
-                    backgroundColor: "rgba(44,62,80,0.3)",
-                    fill: true,
-                    tension: 0.2,
-                  },
-                ],
-              }}
-              options={{
-                responsive: true,
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    title: { display: true, text: "Units" },
-                  },
+          <Line
+            data={{
+              labels: monthWiseData.labels,
+              datasets: [
+                {
+                  label: `${selectedAppliance} (Units)`,
+                  data: monthWiseData.values,
+                  borderColor: "#00ffe0",
+                  backgroundColor: "rgba(0, 255, 255, 0.2)",
+                  fill: true,
+                  tension: 0.3,
                 },
-              }}
-            />
-          </div>
+              ],
+            }}
+            options={{
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: { display: true, text: "Units" },
+                },
+              },
+            }}
+          />
         </div>
       )}
 
       {/* Modal for Stacked Chart */}
       {stackedVisible && stackedData && (
         <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0,0,0,0.6)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 999,
-          }}
+          className="modal-overlay"
           onClick={() => setStackedVisible(false)}
         >
           <div
-            style={{
-              background: "white",
-              padding: "30px",
-              borderRadius: "10px",
-              width: "90%",
-              maxWidth: "900px",
-            }}
+            className="modal-content"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ textAlign: "center", marginBottom: "20px" }}>
-              Month-wise Stacked Energy Distribution
-            </h3>
+            <h3>Month-wise Stacked Energy Distribution</h3>
             <Bar
               data={stackedData}
               options={{
@@ -264,20 +226,8 @@ const DistributionPage = () => {
                 },
               }}
             />
-            <div style={{ textAlign: "center", marginTop: "15px" }}>
-              <button
-                onClick={() => setStackedVisible(false)}
-                style={{
-                  background: "#e74c3c",
-                  color: "white",
-                  padding: "8px 16px",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
-                }}
-              >
-                Close
-              </button>
+            <div style={{ textAlign: "center" }}>
+              <button onClick={() => setStackedVisible(false)}>Close</button>
             </div>
           </div>
         </div>
