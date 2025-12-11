@@ -1,4 +1,3 @@
-// src/pages/DistributionPage.js
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Bar, Line } from "react-chartjs-2";
@@ -12,6 +11,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { Box, Paper, Typography, CircularProgress, Grid, Fade, Grow } from "@mui/material";
 
 ChartJS.register(
   BarElement,
@@ -26,436 +26,301 @@ ChartJS.register(
 const API_BASE = "http://localhost:5000/api";
 
 const DistributionPage = () => {
-  const [dataset, setDataset] = useState([]); // normalized array of objects
+  const [dataset, setDataset] = useState([]);
   const [applianceData, setApplianceData] = useState([]);
-  const [selectedAppliance, setSelectedAppliance] = useState(null);
   const [monthWiseData, setMonthWiseData] = useState(null);
-  const [stackedVisible, setStackedVisible] = useState(false);
   const [stackedData, setStackedData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedAppliance, setSelectedAppliance] = useState(null);
+  const [kpi, setKpi] = useState({});
 
-  // Normalize single row object keys & numeric conversions
   const normalizeRowObject = (raw) => {
     const r = { ...raw };
-
-    // unify Date
-    const dateKeys = ["Date", "date", "Timestamp", "timestamp", "time"];
-    for (const k of dateKeys) {
-      if (r[k]) {
-        r.Date = r[k];
-        break;
-      }
-    }
-
-    // normalize numeric-like fields -> numbers or null
+    const dateKeys = ["Date", "date", "Timestamp", "timestamp"];
+    for (const k of dateKeys) if (r[k]) r.Date = r[k];
     Object.keys(r).forEach((k) => {
-      // skip Date or string columns
-      if (k === "Date" || typeof r[k] === "boolean") return;
-      const v = r[k];
-      if (v === null || v === undefined || v === "") {
-        r[k] = null;
-        return;
-      }
-      // parse numbers where meaningful
-      const n = parseFloat(String(v).replace(",", "").trim());
-      if (!Number.isNaN(n)) r[k] = n;
-      else r[k] = String(v);
+      if (k === "Date") return;
+      const n = parseFloat(r[k]);
+      if (!isNaN(n)) r[k] = n;
     });
-
     return r;
   };
 
-  // If backend returned array-of-arrays (legacy), convert to objects
-  const convertArrayOfArraysToObjects = (arr) => {
-    if (!Array.isArray(arr) || arr.length < 2) return [];
-    const header = arr[0].map((h) => String(h).trim());
-    const rows = arr.slice(1);
-    return rows.map((row) => {
-      const obj = {};
-      header.forEach((h, i) => {
-        obj[h] = row[i];
-      });
-      return obj;
-    });
-  };
-
   const findApplianceUnitKeys = (rows) => {
-    // rows: array of objects
-    if (!rows || rows.length === 0) return [];
-
-    const sample = rows.find((r) => r && Object.keys(r).length > 0) || rows[0];
-    const keys = Object.keys(sample);
-
-    // pick keys that look like "something units", "something_units", "fan_units", or "(Units)" suffix
-    const unitKeys = keys.filter((k) => {
-      const lk = k.toLowerCase();
-      if (lk === "units") return false; // skip global Units column
-      return (
-        lk.includes("unit") || // units/unit/_units
-        lk.includes("(units)") ||
-        lk.endsWith("_units") ||
-        lk.includes("units)") // catch "Fan (Units)"
-      );
-    });
-
-    // return unique list
-    return Array.from(new Set(unitKeys));
+    if (!rows.length) return [];
+    const keys = Object.keys(rows[0]);
+    return keys.filter((k) => k.toLowerCase().includes("unit") && k.toLowerCase() !== "units");
   };
 
-  const labelFromKey = (k) => {
-    // convert key to human label: "Fan_Units" -> "Fan", "Fan (Units)" -> "Fan"
-    let label = k.replace(/[_\-]/g, " ");
-    label = label.replace(/\(.*units.*\)/i, "");
-    label = label.replace(/units/i, "");
-    label = label.replace(/_?units$/i, "");
-    label = label.trim();
-    // Capitalize first letter
-    return label.charAt(0).toUpperCase() + label.slice(1);
-  };
+  const labelFromKey = (k) =>
+    k.replace(/[_\-]/g, " ").replace(/\(.*\)/g, "").replace(/units/i, "").trim();
 
-  // Process object-array dataset into appliance totals and stacked data
-  const processDataFromObjects = (rows) => {
+  const processData = (rows) => {
     const unitKeys = findApplianceUnitKeys(rows);
-    if (unitKeys.length === 0) {
-      setApplianceData([]);
-      setStackedData(null);
-      return;
-    }
+    if (!unitKeys.length) return;
 
-    // total per appliance
-    const appliances = unitKeys.map((k) => {
-      const total = rows.reduce((sum, r) => {
-        const v = parseFloat(r[k]);
-        return sum + (Number.isFinite(v) ? v : 0);
-      }, 0);
-      return { key: k, label: labelFromKey(k), total };
-    });
+    const appliances = unitKeys.map((key) => ({
+      key,
+      label: labelFromKey(key),
+      total: rows.reduce((sum, r) => sum + (parseFloat(r[key]) || 0), 0),
+    }));
 
     setApplianceData(appliances);
 
-    // prepare month-wise stacked data
-    // Determine month for each row: either 'Month' field or derive from Date
     const monthsSet = new Set();
     rows.forEach((r) => {
-      let m = null;
-      if (r.Month !== undefined && r.Month !== null && r.Month !== "") {
-        m = String(r.Month).padStart(2, "0");
-        // if Month is number 1..12 -> convert to YYYY-MM? We don't know year; prefer YYYY-MM if Date present
-      }
-      if (!m && r.Date) {
-        const d = new Date(r.Date);
-        if (!isNaN(d)) m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      }
-      if (!m) m = "Unknown";
-      monthsSet.add(m);
+      const d = new Date(r.Date);
+      if (!isNaN(d)) monthsSet.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
     });
+    const months = [...monthsSet].sort();
 
-    const months = Array.from(monthsSet).sort();
-
-    const datasets = unitKeys.map((k, i) => {
-      const data = months.map((m) => {
-        const sum = rows
-          .filter((r) => {
-            let rm = null;
-            if (r.Month !== undefined && r.Month !== null && r.Month !== "") {
-              rm = String(r.Month).padStart(2, "0");
-            }
-            if (!rm && r.Date) {
-              const d = new Date(r.Date);
-              if (!isNaN(d)) rm = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-            }
-            if (!rm) rm = "Unknown";
-            return rm === m;
-          })
-          .reduce((s, r) => {
-            const v = parseFloat(r[k]);
-            return s + (Number.isFinite(v) ? v : 0);
-          }, 0);
-        return sum;
-      });
-
-      // nice HSL palette spread
-      return {
-        label: labelFromKey(k),
-        data,
-        backgroundColor: `hsl(${(i * 45) % 360}, 70%, 60%)`,
-      };
-    });
+    const datasets = unitKeys.map((key, i) => ({
+      label: labelFromKey(key),
+      data: months.map((m) => {
+        const monthRows = rows.filter((r) => {
+          const d = new Date(r.Date);
+          const tag = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+          return tag === m;
+        });
+        return monthRows.reduce((s, r) => s + (parseFloat(r[key]) || 0), 0);
+      }),
+      backgroundColor: `hsl(${(i * 45) % 360}, 70%, 60%)`,
+    }));
 
     setStackedData({ labels: months, datasets });
+
+    // Default KPI summary
+    const totalUnits = appliances.reduce((sum, a) => sum + a.total, 0);
+    const topAppliance = appliances.reduce((p, c) => (c.total > p.total ? c : p), appliances[0]);
+    const avgDaily = (totalUnits / rows.length).toFixed(2);
+    setKpi({
+      totalUnits: totalUnits.toFixed(2),
+      topAppliance: topAppliance.label,
+      avgDaily,
+      applianceCount: appliances.length,
+    });
   };
 
   const handleApplianceClick = (label) => {
     setSelectedAppliance(label);
-
-    // Find the corresponding key in applianceData
     const found = applianceData.find((a) => a.label === label);
-    if (!found) {
-      setMonthWiseData(null);
-      return;
-    }
+    if (!found) return;
     const key = found.key;
-
-    // prepare month-wise values
-    // derive months similar to stacked logic
     const monthly = {};
     dataset.forEach((r) => {
       let m = null;
-      if (r.Month !== undefined && r.Month !== null && r.Month !== "") {
-        m = String(r.Month).padStart(2, "0");
-      }
-      if (!m && r.Date) {
-        const d = new Date(r.Date);
-        if (!isNaN(d)) m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      }
-      if (!m) m = "Unknown";
+      const d = new Date(r.Date);
+      if (!isNaN(d)) m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       const v = parseFloat(r[key]);
       monthly[m] = (monthly[m] || 0) + (Number.isFinite(v) ? v : 0);
     });
-
     const labels = Object.keys(monthly).sort();
     const values = labels.map((l) => monthly[l]);
     setMonthWiseData({ labels, values });
   };
 
   useEffect(() => {
-    // fetch /api/data for the logged-in user
-    const load = async () => {
+    const fetchData = async () => {
       setLoading(true);
       setError(null);
-
       const token = localStorage.getItem("access_token");
       if (!token) {
-        setError("Not logged in - please login to view distribution.");
+        setError("Please login to view this page.");
         setLoading(false);
         return;
       }
-
       try {
-        const resp = await axios.get(`${API_BASE}/data`, {
+        const res = await axios.get(`${API_BASE}/data`, {
           headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000,
         });
-
-        console.debug("/api/data response (distribution):", resp.status, resp.data);
-
-        // Accept multiple response shapes
-        let rows = [];
-        if (Array.isArray(resp.data)) {
-          rows = resp.data;
-        } else if (resp.data && Array.isArray(resp.data.data)) {
-          rows = resp.data.data;
-        } else if (resp.data && Array.isArray(resp.data.rows)) {
-          rows = resp.data.rows;
-        } else if (resp.data && Array.isArray(resp.data.result)) {
-          rows = resp.data.result;
-        } else {
-          console.warn("Unexpected /api/data payload shape:", resp.data);
-          rows = [];
-        }
-
-        // If array-of-arrays legacy format, convert
-        if (rows.length > 0 && Array.isArray(rows[0])) {
-          rows = convertArrayOfArraysToObjects(rows);
-        }
-
-        // Normalize rows to objects with numeric conversions
-        const normalized = rows.map(normalizeRowObject);
-
-        if (normalized.length === 0) {
-          setDataset([]);
-          setApplianceData([]);
-          setStackedData(null);
-          setError("No data found for this user.");
-          setLoading(false);
-          return;
-        }
-
-        setDataset(normalized);
-        processDataFromObjects(normalized);
-      } catch (err) {
-        console.error("Distribution fetch error:", err);
-        setError("Failed to load data for distribution. Check server or token.");
+        const rows = Array.isArray(res.data) ? res.data.map(normalizeRowObject) : [];
+        setDataset(rows);
+        processData(rows);
+      } catch (e) {
+        console.error(e);
+        setError("Failed to load data.");
       } finally {
         setLoading(false);
       }
     };
-
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchData();
   }, []);
 
   return (
-    <div className="page-container" style={{ padding: "20px" }}>
-      <h2>Appliance-wise Energy Distribution</h2>
+    <Box sx={{ background: "#0f172a", color: "#e2e8f0", p: 4, minHeight: "100vh" }}>
+      <Typography variant="h4" align="center" sx={{ color: "#38bdf8", mb: 3, fontWeight: "bold" }}>
+        ⚙️ Appliance Energy Distribution
+      </Typography>
 
-      {loading && <p>Loading data...</p>}
-      {error && !loading && <div style={{ color: "crimson" }}>{error}</div>}
-
-      {/* Appliance Bar Chart */}
-      {!loading && applianceData.length > 0 && (
-        <div style={{ maxWidth: "900px", margin: "auto" }}>
-          <Bar
-            data={{
-              labels: applianceData.map((a) => a.label),
-              datasets: [
-                {
-                  label: "Total Energy (Units)",
-                  data: applianceData.map((a) => a.total),
-                  backgroundColor: [
-                    "#4e79a7",
-                    "#f28e2b",
-                    "#e15759",
-                    "#76b7b2",
-                    "#59a14f",
-                    "#edc948",
-                    "#b07aa1",
-                  ],
-                },
-              ],
-            }}
-            options={{
-              responsive: true,
-              onClick: (e, elements) => {
-                if (elements.length > 0) {
-                  const index = elements[0].index;
-                  const label = applianceData[index].label;
-                  handleApplianceClick(label);
-                }
-              },
-              plugins: {
-                legend: { display: false },
-              },
-              scales: {
-                y: { beginAtZero: true, title: { display: true, text: "Units" } },
-              },
-            }}
-          />
-
-          {/* View All Appliances Button */}
-          <div style={{ textAlign: "center", marginTop: "20px" }}>
-            <button
-              onClick={() => setStackedVisible(true)}
-              style={{
-                background: "#2c3e50",
-                color: "white",
-                padding: "10px 20px",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-              }}
-            >
-              View Month-wise Stacked Chart
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Month-wise Line Chart for selected appliance */}
-      {monthWiseData && (
-        <div
-          style={{
-            marginTop: "40px",
-            background: "#f9f9f9",
-            padding: "20px",
-            borderRadius: "8px",
-          }}
-        >
-          <h3>Month-wise Energy Usage — {selectedAppliance}</h3>
-          <div style={{ maxWidth: "800px", margin: "auto" }}>
-            <Line
-              data={{
-                labels: monthWiseData.labels,
-                datasets: [
-                  {
-                    label: `${selectedAppliance} (Units)`,
-                    data: monthWiseData.values,
-                    borderColor: "#2c3e50",
-                    backgroundColor: "rgba(44,62,80,0.3)",
-                    fill: true,
-                    tension: 0.2,
-                  },
-                ],
-              }}
-              options={{
-                responsive: true,
-                scales: {
-                  y: {
-                    beginAtZero: true,
-                    title: { display: true, text: "Units" },
-                  },
-                },
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Modal for Stacked Chart */}
-      {stackedVisible && stackedData && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0,0,0,0.6)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 999,
-          }}
-          onClick={() => setStackedVisible(false)}
-        >
-          <div
-            style={{
-              background: "white",
-              padding: "30px",
-              borderRadius: "10px",
-              width: "90%",
-              maxWidth: "900px",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ textAlign: "center", marginBottom: "20px" }}>
-              Month-wise Stacked Energy Distribution
-            </h3>
-            <Bar
-              data={stackedData}
-              options={{
-                responsive: true,
-                plugins: { legend: { position: "top" } },
-                scales: {
-                  x: { stacked: true },
-                  y: {
-                    stacked: true,
-                    beginAtZero: true,
-                    title: { display: true, text: "Units" },
-                  },
-                },
-              }}
-            />
-            <div style={{ textAlign: "center", marginTop: "15px" }}>
-              <button
-                onClick={() => setStackedVisible(false)}
-                style={{
-                  background: "#e74c3c",
-                  color: "white",
-                  padding: "8px 16px",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: "pointer",
+      {/* KPI CARDS */}
+      {!loading && !error && (
+        <Grid container spacing={2} sx={{ mb: 4 }}>
+          {[
+            { label: "Total Energy Used", value: `${kpi.totalUnits || 0} kwh`, color: "#38bdf8" },
+            { label: "Top Appliance", value: kpi.topAppliance || "-", color: "#22c55e" },
+            { label: "Avg Daily Usage", value: `${kpi.avgDaily || 0} kwh`, color: "#facc15" },
+            { label: "Tracked Appliances", value: kpi.applianceCount || 0, color: "#fb7185" },
+          ].map((card, i) => (
+            <Grid item xs={12} sm={6} md={3} key={i}>
+              <Paper
+                sx={{
+                  background: "#1e293b",
+                  p: 2,
+                  borderRadius: "10px",
+                  textAlign: "center",
+                  border: `1px solid ${card.color}40`,
                 }}
               >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+                <Typography sx={{ color: "#94a3b8" }}>{card.label}</Typography>
+                <Typography sx={{ color: card.color, fontSize: "1.3rem", fontWeight: "bold" }}>
+                  {card.value}
+                </Typography>
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
       )}
-    </div>
+
+      {loading && (
+        <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: "50vh" }}>
+          <CircularProgress sx={{ color: "#38bdf8" }} />
+        </Box>
+      )}
+
+      {!loading && !error && applianceData.length > 0 && (
+        <>
+          {/* TOTAL APPLIANCE USAGE */}
+          <Fade in timeout={700}>
+            <Paper
+              sx={{
+                background: "#1e293b",
+                p: 3,
+                borderRadius: "12px",
+                border: "1px solid #334155",
+                mb: 3,
+              }}
+            >
+              <Typography variant="h6" sx={{ color: "#22c55e", mb: 2 }}>
+                📊 Total Usage by Appliance
+              </Typography>
+              <Box sx={{ height: 260 }}>
+                <Bar
+                  data={{
+                    labels: applianceData.map((a) => a.label),
+                    datasets: [
+                      {
+                        label: "Total Energy (Units)",
+                        data: applianceData.map((a) => a.total),
+                        backgroundColor: [
+                          "#38bdf8",
+                          "#22c55e",
+                          "#facc15",
+                          "#fb7185",
+                          "#8b5cf6",
+                          "#06b6d4",
+                          "#e879f9",
+                        ],
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (e, el) => {
+                      if (el.length > 0)
+                        handleApplianceClick(applianceData[el[0].index].label);
+                    },
+                    plugins: { legend: { display: false } },
+                    scales: {
+                      y: { beginAtZero: true, ticks: { color: "#94a3b8" } },
+                      x: { ticks: { color: "#94a3b8" } },
+                    },
+                  }}
+                />
+              </Box>
+            </Paper>
+          </Fade>
+
+          {/* STACKED MONTH-WISE CHART */}
+          {stackedData && (
+            <Grow in timeout={800}>
+              <Paper
+                sx={{
+                  background: "#1e293b",
+                  p: 3,
+                  borderRadius: "12px",
+                  border: "1px solid #334155",
+                  mb: 3,
+                }}
+              >
+                <Typography variant="h6" sx={{ color: "#38bdf8", mb: 2 }}>
+                  🧩 Month-wise Stacked Energy Distribution
+                </Typography>
+                <Box sx={{ height: 260 }}>
+                  <Bar
+                    data={stackedData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: { legend: { labels: { color: "#e2e8f0" } } },
+                      scales: {
+                        x: { stacked: true, ticks: { color: "#94a3b8" } },
+                        y: { stacked: true, beginAtZero: true, ticks: { color: "#94a3b8" } },
+                      },
+                    }}
+                  />
+                </Box>
+              </Paper>
+            </Grow>
+          )}
+
+          {/* SELECTED APPLIANCE CHART */}
+          {monthWiseData && (
+            <Grow in timeout={900}>
+              <Paper
+                sx={{
+                  background: "#1e293b",
+                  p: 3,
+                  borderRadius: "12px",
+                  border: "1px solid #334155",
+                }}
+              >
+                <Typography variant="h6" sx={{ color: "#facc15", mb: 2 }}>
+                  📈 {selectedAppliance} — Month-wise Trend
+                </Typography>
+                <Box sx={{ height: 220 }}>
+                  <Line
+                    data={{
+                      labels: monthWiseData.labels,
+                      datasets: [
+                        {
+                          label: `${selectedAppliance} (Units)`,
+                          data: monthWiseData.values,
+                          borderColor: "#38bdf8",
+                          backgroundColor: "rgba(56,189,248,0.2)",
+                          fill: true,
+                          tension: 0.3,
+                        },
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: { legend: { labels: { color: "#e2e8f0" } } },
+                      scales: {
+                        x: { ticks: { color: "#94a3b8" } },
+                        y: { beginAtZero: true, ticks: { color: "#94a3b8" } },
+                      },
+                    }}
+                  />
+                </Box>
+              </Paper>
+            </Grow>
+          )}
+        </>
+      )}
+    </Box>
   );
 };
 

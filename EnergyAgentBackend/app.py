@@ -6,7 +6,7 @@ import warnings
 import pmdarima as pm
 import pandas as pd
 import numpy as np
-
+import json
 from flask import Flask, request, jsonify, current_app, make_response
 from flask_cors import CORS
 
@@ -336,7 +336,11 @@ def get_user_data_as_dataframe():
             df["Date"] = pd.to_datetime(df["Date"])
             df = df.set_index("Date").sort_index()
             return df, None
-        return None, (jsonify({"error": "No data found. Please enter data manually."}), 404)
+        return None, (jsonify({
+        "status": "empty",
+        "message": "No data found for your account. Please upload or enter usage data."
+        }), 200)
+
     except Exception as e:
         return None, (jsonify({"error": f"Error finding dataset: {str(e)}"}), 500)
 
@@ -355,6 +359,60 @@ def create_features(df):
     # Drop rows with NaN values created by shifts/rolling
     df_new = df_new.dropna() 
     return df_new
+
+# --- NEW HELPER FUNCTION (Replaces the old api_recommendations_user) ---
+def get_energy_vampire_recs(df):
+    """
+    Finds the top energy-consuming appliances from a user's dataframe.
+    This is the "Best" approach.
+    """
+    recommendations = []
+    
+    # 1. Find all appliance unit columns
+    unit_cols = [col for col in df.columns if col.endswith('_Units')]
+    if not unit_cols:
+        return ["Could not find any appliance data to make a recommendation."]
+
+    # 2. Sum the last 30 days of data for each appliance
+    try:
+        last_30_days = df.iloc[-30:] # Get last 30 days
+        appliance_sums = last_30_days[unit_cols].sum()
+        total_units = appliance_sums.sum()
+
+        if total_units == 0:
+            return ["No appliance usage was recorded in the last 30 days."]
+
+        # 3. Calculate percentage for each
+        appliance_perc = ((appliance_sums / total_units) * 100).sort_values(ascending=False)
+
+        # 4. Generate recommendations for the top 3
+        recommendations.append(
+            f"Your top energy 'vampire' last month was your "
+            f"**{appliance_perc.index[0].replace('_Units', '')}**, "
+            f"which used **{appliance_perc.iloc[0]:.0f}%** of your total appliance power."
+        )
+
+        # Add a specific tip for the top appliance
+        if 'AC_Units' in appliance_perc.index[0]:
+            recommendations.append("**Action:** Try setting your AC to 24°C-26°C. Each degree higher can save 3-5% on cooling costs.")
+        elif 'Fridge_Units' in appliance_perc.index[0]:
+            recommendations.append("**Action:** Check that your refrigerator's door seals are clean and tight. Gaps can waste significant energy.")
+        elif 'Motor_Units' in appliance_perc.index[0]:
+            recommendations.append("**Action:** Try to run your water pump in the early morning or late evening to avoid peak energy hours.")
+            
+        if len(appliance_perc) > 1:
+            recommendations.append(
+                f"Your #2 user was your "
+                f"**{appliance_perc.index[1].replace('_Units', '')}** "
+                f"at **{appliance_perc.iloc[1]:.0f}%**."
+            )
+
+        return recommendations
+        
+    except Exception as e:
+        current_app.logger.error(f"Error generating vampire recs: {e}")
+        return ["Error analyzing appliance data."]
+    
 
 # -------------------- Routes (canonical) --------------------
 @app.route("/")
@@ -504,6 +562,10 @@ def api_forecast():
 
 # DB-backed forecast for authenticated users (V11 - Corrected Resampling)
 # DB-backed forecast for authenticated users (V13 - Transfer Learning)
+# DB-backed forecast for authenticated users (V14 - FINAL with Recommendations)
+# DB-backed forecast for authenticated users (V16 - Dual Model Benchmark)
+# DB-backed forecast for authenticated users (V17 - Efficiency Benchmark)
+# DB-backed forecast for authenticated users (V16 - Dual Model Benchmark)
 @app.route("/api/forecast_user", methods=["POST", "OPTIONS"])
 @jwt_required()
 def api_forecast_user():
@@ -517,7 +579,7 @@ def api_forecast_user():
     if not city_name:
         return jsonify({'error': 'City name is required for weather forecast.'}), 400
 
-    # 1. Get user's personal data
+    # 1. Get and prepare user data
     df, error = get_user_data_as_dataframe()
     if error:
         return error
@@ -525,33 +587,30 @@ def api_forecast_user():
         if "Units" not in df.columns or df["Units"].isnull().all():
             return jsonify({'error': 'No "Units" data available for forecasting.'}), 400
         
-        df_base = df[["Units", "Temperature"]].resample("D").asfreq().ffill().bfill()
+        df_base = df.resample("D").asfreq().ffill().bfill()
         
         if len(df_base) < 30:
             return jsonify({'error': 'Not enough data for fine-tuning (need at least 30 days).'}), 400
 
-        # 2. Create features for user's personal data
+        # 2. Create ML features
         df_ml = create_features_with_weather(df_base)
         
-        FEATURES = ['day_of_week', 'month', 'day_of_year', 'lag_1', 'lag_7', 'rolling_mean_7', 'Temperature']
+        TOTAL_FORECAST_FEATURES = ['day_of_week', 'month', 'day_of_year', 'lag_1', 'lag_7', 'rolling_mean_7', 'Temperature']
         TARGET = 'Units'
         
-        X_user = df_ml[FEATURES]
+        X_user = df_ml[TOTAL_FORECAST_FEATURES]
         y_user = df_ml[TARGET]
 
-        # 3. --- FINE-TUNING WORKFLOW ---
+        # 3. --- FINE-TUNING WORKFLOW (for TOTAL forecast) ---
         current_app.logger.info("Loading pre-trained base_model.pkl...")
-        
-        # Load the "master chef" model
         with open('base_model.pkl', 'rb') as f:
-            model = pickle.load(f)
+            base_model = pickle.load(f)
         
-        # Fine-tune the model by training it *more* on the user's personal data
-        current_app.logger.info("Fine-tuning model on user data...")
+        from sklearn.base import clone 
+        model = clone(base_model)
         model.fit(X_user, y_user)
-        # --- END OF WORKFLOW ---
         
-        # 4. Get Historical Predictions
+        # 4. Get Historical Predictions (for TOTAL forecast)
         historical_forecast = model.predict(X_user)
 
         # 5. Get Future Weather
@@ -564,35 +623,32 @@ def api_forecast_user():
             last_temp = future_temps[-1] if future_temps else 25.0
             future_temps.extend([last_temp] * (forecast_steps - len(future_temps)))
         
-        # 6. Generate Future Predictions (Recursively)
-        future_forecast = []
+        # 6. Generate Future Predictions (for TOTAL forecast)
+        future_forecast_values = []
         last_row = df_ml.iloc[-1]
-        current_features = last_row[FEATURES].to_dict()
+        current_features = last_row[TOTAL_FORECAST_FEATURES].to_dict()
         current_date = df_ml.index[-1]
 
         for i in range(forecast_steps):
             current_features['Temperature'] = future_temps[i]
             features_df = pd.DataFrame([current_features])
-            features_df = features_df[FEATURES] 
-            
+            features_df = features_df[TOTAL_FORECAST_FEATURES] 
             next_pred = model.predict(features_df)[0]
-            future_forecast.append(float(next_pred))
+            future_forecast_values.append(float(next_pred))
             
-            # Update features for the *next* loop
+            # ... (Update features for next loop) ...
             current_date += pd.Timedelta(days=1)
-            # ... (rest of the recursive update logic is the same) ...
             current_features['day_of_week'] = current_date.dayofweek
             current_features['month'] = current_date.month
             current_features['day_of_year'] = current_date.dayofyear
             current_features['lag_1'] = next_pred
-            
             lag_7_date = current_date - pd.Timedelta(days=7)
             if lag_7_date in df_ml.index:
                 current_features['lag_7'] = df_ml.loc[lag_7_date][TARGET]
             else:
                 if lag_7_date >= (df_ml.index[-1] + pd.Timedelta(days=1)):
                     if (i-7) >= 0:
-                        current_features['lag_7'] = future_forecast[i-7]
+                        current_features['lag_7'] = future_forecast_values[i-7]
                     else:
                         current_features['lag_7'] = last_row['lag_7']
                 else:
@@ -600,7 +656,6 @@ def api_forecast_user():
             current_features['rolling_mean_7'] = (current_features['rolling_mean_7'] * 6 + next_pred) / 7
 
         # 7. Calculate Metrics
-        # ... (Metrics calculation is the same) ...
         metrics = None
         try:
             actuals = y_user
@@ -610,31 +665,96 @@ def api_forecast_user():
             mape_series = np.abs((actuals - preds) / actuals)
             mape = np.mean(mape_series[np.isfinite(mape_series)]) * 100
             metrics = {
-                "MAE": round(mae, 3),
-                "RMSE": round(rmse, 3),
-                "MAPE (%)": round(mape, 3)
+                "MAE": round(mae, 3), "RMSE": round(rmse, 3), "MAPE (%)": round(mape, 3)
             }
         except Exception as e:
             current_app.logger.error(f"ML metrics calculation failed: {e}")
             metrics = None
         
-        # 8. Format data for the frontend
-        # ... (Data formatting is the same) ...
+        # 8. --- NEW: APPLIANCE BENCHMARKING & RECOMMENDATIONS ---
+        recommendations = []
+        benchmark_data = {}
+        try:
+            current_app.logger.info("Loading appliance_model.pkl for benchmark...")
+            with open('appliance_model.pkl', 'rb') as f:
+                appliance_model = pickle.load(f)
+
+            # Get user's appliance data and appliance feature set
+            APPLIANCE_COLS = [col for col in df.columns if col.endswith('_Units')]
+            BENCHMARK_FEATURES = ['day_of_week', 'month', 'day_of_year', 'Temperature']
+            
+            # We use df_ml here because it's already filled and feature-engineered
+            X_user_benchmark = df_ml[BENCHMARK_FEATURES]
+            
+            # Get user's actual appliance usage (from the raw 'df')
+            user_appliance_df = df.reindex(X_user_benchmark.index)[APPLIANCE_COLS].fillna(0)
+            user_sums = user_appliance_df.sum()
+            total_user_appliance_sum = user_sums.sum()
+            
+            # Predict "standard" appliance usage
+            standard_preds_array = appliance_model.predict(X_user_benchmark)
+            standard_preds_df = pd.DataFrame(standard_preds_array, columns=APPLIANCE_COLS, index=X_user_benchmark.index)
+            standard_sums = standard_preds_df.sum()
+
+            # Create the data for the bar chart
+            for col in APPLIANCE_COLS:
+                # Don't show appliances that were never used
+                if user_sums[col] > 0 or standard_sums[col] > 0:
+                    benchmark_data[col.replace('_Units', '')] = {
+                        'user': user_sums[col], 
+                        'standard': standard_sums[col]
+                    }
+
+            # Generate text recommendations based on this benchmark
+            if total_user_appliance_sum > 0:
+                user_perc = ((user_sums / total_user_appliance_sum) * 100).sort_values(ascending=False)
+                
+                # Top Vampire Rec
+                top_vampire_name = user_perc.index[0].replace('_Units', '')
+                top_vampire_perc = user_perc.iloc[0]
+                recommendations.append(f"**Energy Vampire:** Your **{top_vampire_name}** was your #1 energy user, responsible for **{top_vampire_perc:.0f}%** of your total appliance consumption.")
+                
+                # Top Benchmark Rec
+                diff_perc = ((user_sums - standard_sums) / standard_sums).sort_values(ascending=False)
+                top_diff_name = diff_perc.index[0].replace('_Units', '')
+                top_diff_perc = diff_perc.iloc[0]
+                
+                if top_diff_perc > 0.15: # 15% higher than standard
+                    recommendations.append(f"**Efficiency:** Your **{top_diff_name}** usage was **{top_diff_perc:.0f}% higher** than a standard user with the same weather. This is a great place to save!")
+
+        except Exception as e:
+            current_app.logger.error(f"Error during benchmark recs: {e}")
+
+        # Rec 3: "Future Tip" (Smarter Quantified Logic)
+        try:
+            avg_future_temp = sum(future_temps[:7]) / 7 # Avg for next 7 days
+            avg_past_temp = X_user.iloc[-7:]['Temperature'].mean() # Avg for last 7 days
+            
+            if (avg_future_temp - avg_past_temp) > 3: # 3+ degree spike
+                avg_future_usage = sum(future_forecast_values[:7]) / 7
+                avg_past_usage = y_user.iloc[-7:].mean()
+                usage_spike = ((avg_future_usage - avg_past_usage) / avg_past_usage) * 100
+                
+                if usage_spike > 10:
+                    recommendations.append(f"**Heads Up:** A heatwave is forecasted for {city_name}! Our model predicts this may increase your energy use by **~{usage_spike:.0f}%** over the next week. This is a good time to clean your AC filters.")
+        except Exception as e:
+             current_app.logger.error(f"Error during future recs: {e}")
+
+        # 9. Format data for the frontend
         raw_units_reindexed = df[TARGET].reindex(df_ml.index)
-        history_dict = {str(d.date()): (float(v) if pd.notna(v) else None) 
-                        for d, v in raw_units_reindexed.items()}
-        historical_preds_dict = {str(d.date()): float(v) 
-                                 for d, v in zip(X_user.index, historical_forecast)}
+        history_dict = {str(d.date()): (float(v) if pd.notna(v) else None) for d, v in raw_units_reindexed.items()}
+        historical_preds_dict = {str(d.date()): float(v) for d, v in zip(X_user.index, historical_forecast)}
         future_dates = pd.date_range(start=df_ml.index[-1] + pd.Timedelta(days=1), periods=forecast_steps)
-        future_preds_dict = {str(d.date()): float(v) 
-                             for d, v in zip(future_dates, future_forecast)}
+        future_preds_dict = {str(d.date()): float(v) for d, v in zip(future_dates, future_forecast_values)}
         
         return jsonify({
             "message": f"Fine-tuned XGBoost + Weather forecast for {forecast_steps} days generated for {city_name}.",
             "history": history_dict,
             "forecast": future_preds_dict,
             "historical_forecast": historical_preds_dict,
-            "metrics": metrics
+            "metrics": metrics,
+            "recommendations": recommendations,
+            "benchmark_data": benchmark_data  # <-- OUR NEW DATA
         })
 
     except Exception as e:
@@ -670,18 +790,6 @@ def api_recommendations():
             msg += f" Consumes about {avg_units} kWh/day — consider off-peak usage."
         recommendations.append({"appliance": appliance, "avg_usage": avg_usage, "avg_units": avg_units, "recommendation": msg})
     return jsonify({"recommendations": recommendations})
-
-
-# DB-backed recommendations
-@app.route("/api/recommendations_user", methods=["GET", "OPTIONS"])
-@jwt_required()
-def api_recommendations_user():
-    if request.method == "OPTIONS":
-        return make_response("", 200)
-    df, error = get_user_data_as_dataframe()
-    if error:
-        return error
-    return api_recommendations()
 
 
 @app.route("/api/health", methods=["GET", "OPTIONS"])
@@ -759,7 +867,11 @@ def get_data_db():
             query = query.filter(DailyData.Date <= end_date_obj)
         user_data = query.order_by(DailyData.Date.asc()).all()
         if not user_data:
-            return jsonify({"message": "No data found for this user. Please add data manually or upload a dataset."}), 404
+            return jsonify({
+            "status": "empty",
+            "message": "No data found for this user. Please add data manually or upload a dataset."
+            }), 200
+
         results = []
         for r in user_data:
             results.append(

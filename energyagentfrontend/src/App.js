@@ -1,76 +1,53 @@
 import React from 'react';
-import './App.css'; // This is your new CSS
-import { BrowserRouter as Router, Routes, Route, Outlet, Navigate } from 'react-router-dom';
+import './App.css';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
-// Import all your pages
-import Sidebar from './pages/Sidebar';
+// Import your pages and layout
+import Layout from './pages/Layout'; // New Layout (includes Sidebar)
 import HomePage from './pages/HomePage';
-import Dashboard from './pages/Dashboard';
 import Dataset from './pages/Dataset';
 import Overview from './pages/Overview';
 import DistributionPage from './pages/DistributionPage';
 import ForecastingPage from './pages/ForecastingPage';
-import RecommendationPage from './pages/RecommendationPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 
-// --- This is our Protected Route logic ---
+// Authentication helper
 const useAuth = () => {
   const token = localStorage.getItem('access_token');
-  return token ? true : false;
+  return Boolean(token);
 };
 
-// --- This is our new Layout Component ---
-// It shows the Sidebar and the page content next to it
-const ProtectedLayout = () => {
+// Protected Route Wrapper
+const ProtectedRoute = ({ children }) => {
   const isAuth = useAuth();
-
-  if (!isAuth) {
-    // If not logged in, redirect to login
-    return <Navigate to="/login" />;
-  }
-
-  return (
-    <div className="app-container">
-      <Sidebar />
-      <div className="page-container">
-        <Outlet /> {/* This renders the current page (e.g., HomePage) */}
-      </div>
-    </div>
-  );
-};
-
-// --- This layout is for public pages (no sidebar) ---
-const PublicLayout = () => {
-  return (
-    <div>
-      <Outlet />
-    </div>
-  );
+  return isAuth ? children : <Navigate to="/login" replace />;
 };
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* --- Public Routes (Login/Register) --- */}
-        <Route element={<PublicLayout />}>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/" element={<Navigate to="/login" />} /> {/* Default to login */}
-        </Route>
+        {/* Public Routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* --- Protected Routes (The App) --- */}
-        <Route element={<ProtectedLayout />}>
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/dataset" element={<Dataset />} />
-          <Route path="/overview" element={<Overview />} />
-          <Route path="/distribution" element={<DistributionPage />} />
-          <Route path="/forecasting" element={<ForecastingPage />} />
-          <Route path="/recommendation" element={<RecommendationPage />} />
+        {/* Protected Routes - use the new Layout */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="home" element={<HomePage />} />
+          <Route path="dataset" element={<Dataset />} />
+          <Route path="overview" element={<Overview />} />
+          <Route path="distribution" element={<DistributionPage />} />
+          <Route path="forecasting" element={<ForecastingPage />} />
         </Route>
-
       </Routes>
     </Router>
   );

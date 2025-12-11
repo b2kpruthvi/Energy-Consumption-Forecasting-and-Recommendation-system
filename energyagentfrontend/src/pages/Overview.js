@@ -1,332 +1,292 @@
-// src/pages/Overview.jsx
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Box, Typography, Grid, Paper, CircularProgress } from "@mui/material";
 import axios from "axios";
-import "../styles/style.css";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer,
-} from "recharts";
+import ReactECharts from "echarts-for-react";
+import * as echarts from "echarts";
 
 const API_BASE = "http://localhost:5000/api";
 
-function Overview() {
-  const navigate = useNavigate();
-
-  const [totalEnergy, setTotalEnergy] = useState(0);
-  const [averageEnergy, setAverageEnergy] = useState(0);
-  const [totalRecords, setTotalRecords] = useState(0);
-  const [chartData, setChartData] = useState([]);
-  const [monthlyData, setMonthlyData] = useState([]);
-  const [highestMonth, setHighestMonth] = useState("");
-  const [lowestMonth, setLowestMonth] = useState("");
+const Overview = () => {
+  const [summary, setSummary] = useState({
+    totalEnergy: 0,
+    averageEnergy: 0,
+    totalRecords: 0,
+    highestMonth: "",
+    lowestMonth: "",
+  });
+  const [dailyChart, setDailyChart] = useState([]);
+  const [monthlyChart, setMonthlyChart] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Normalizer: make sure date and units are available in consistent keys
-  const normalizeRow = (row) => {
-    // row may be objects with many key name variants.
-    const r = { ...row };
-
-    // Find date - several possible keys
-    const dateKeys = ["Date", "date", "Timestamp", "timestamp", "time"];
-    for (const k of dateKeys) {
-      if (r[k]) {
-        r.Date = r[k];
-        break;
-      }
-    }
-
-    // Find units - several variants
-    const unitKeys = ["Units", "units", "Unit", "kWh", "Energy", "energy", "Units_kWh"];
-    for (const k of unitKeys) {
-      if (r[k] !== undefined && r[k] !== null && r[k] !== "") {
-        r.Units = r[k];
-        break;
-      }
-    }
-
-    // If appliance columns exist as strings, convert to numbers where possible
-    const numericCols = [
-      "Units",
-      "Fan",
-      "Fan_Units",
-      "Refrigerator",
-      "Fridge_Units",
-      "AirConditioner",
-      "AC_Units",
-      "Bulb",
-      "Bulb_Units",
-      "Television",
-      "TV_Units",
-      "Monitor",
-      "Monitor_Units",
-      "MotorPump",
-      "Motor_Units",
-      "Extra",
-      "TariffRate",
-      "ElectricityBill",
-      "Temperature",
-    ];
-    for (const c of numericCols) {
-      if (r[c] !== undefined && r[c] !== null && r[c] !== "") {
-        const v = parseFloat(r[c]);
-        r[c] = Number.isFinite(v) ? v : null;
-      } else {
-        r[c] = null;
-      }
-    }
-
-    return r;
-  };
-
   useEffect(() => {
     const token = localStorage.getItem("access_token");
-    if (!token) {
-      // If not logged in, redirect to login page (or you can show a message)
-      navigate("/login");
-      return;
-    }
+    if (!token) return;
 
-      const fetchData = async () => {
-    setLoading(true);
-    setError(null);
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const resp = await axios.get(`${API_BASE}/data`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      setError("Not logged in. Please login to view your data.");
-      setLoading(false);
-      navigate("/login");
-      return;
-    }
+        const rows = Array.isArray(resp.data) ? resp.data : [];
+        if (!rows.length) {
+          setError("No data found. Please upload your dataset first.");
+          setLoading(false);
+          return;
+        }
 
-    try {
-      const resp = await axios.get(`${API_BASE}/data`, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 10000,
-      });
+        // Normalize
+        const normalized = rows.map((r) => ({
+          Date: r.Date,
+          Units: parseFloat(r.Units) || 0,
+        }));
 
-      // DEBUG: log entire response to help troubleshooting
-      console.debug("/api/data full response:", resp.status, resp.data);
+        normalized.sort((a, b) => new Date(a.Date) - new Date(b.Date));
 
-      // Normalize accepted shapes:
-      // 1) resp.data === array -> use it
-      // 2) resp.data.data -> use it
-      // 3) resp.data.rows -> use it (some servers use 'rows')
-      let rows = [];
-      if (Array.isArray(resp.data)) {
-        rows = resp.data;
-      } else if (resp.data && Array.isArray(resp.data.data)) {
-        rows = resp.data.data;
-      } else if (resp.data && Array.isArray(resp.data.rows)) {
-        rows = resp.data.rows;
-      } else if (resp.data && Array.isArray(resp.data.result)) {
-        // another possible key
-        rows = resp.data.result;
-      } else {
-        console.warn("Unexpected /api/data payload shape:", resp.data);
-        rows = [];
+        let total = 0;
+        const daily = {};
+        const monthly = {};
+
+        normalized.forEach((r) => {
+          const d = new Date(r.Date);
+          if (!isNaN(d)) {
+            total += r.Units;
+            const dayKey = d.toISOString().slice(0, 10);
+            const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+            daily[dayKey] = (daily[dayKey] || 0) + r.Units;
+            monthly[monthKey] = (monthly[monthKey] || 0) + r.Units;
+          }
+        });
+
+        const dailyArr = Object.entries(daily).map(([date, val]) => ({ date, val }));
+        const monthlyArr = Object.entries(monthly).map(([month, val]) => ({ month, val }));
+
+        const totalDays = Object.keys(daily).length;
+        const avg = totalDays ? total / totalDays : 0;
+        const highest = monthlyArr.reduce((a, b) => (a.val > b.val ? a : b), monthlyArr[0]);
+        const lowest = monthlyArr.reduce((a, b) => (a.val < b.val ? a : b), monthlyArr[0]);
+
+        setSummary({
+          totalEnergy: total.toFixed(2),
+          averageEnergy: avg.toFixed(2),
+          totalRecords: normalized.length,
+          highestMonth: highest ? `${highest.month} (${highest.val.toFixed(2)} kWh)` : "—",
+          lowestMonth: lowest ? `${lowest.month} (${lowest.val.toFixed(2)} kWh)` : "—",
+        });
+        setDailyChart(dailyArr);
+        setMonthlyChart(monthlyArr);
+      } catch (err) {
+        console.error(err);
+        setError("Error fetching data.");
+      } finally {
+        setLoading(false);
       }
-
-      console.debug("Normalized rows count:", rows.length);
-
-      if (!rows || rows.length === 0) {
-        setTotalEnergy(0);
-        setAverageEnergy(0);
-        setTotalRecords(0);
-        setChartData([]);
-        setMonthlyData([]);
-        setHighestMonth("");
-        setLowestMonth("");
-        setError("No data found for this user. Upload or add some records.");
-        return;
-      }
-
-      // Normalize rows and compute aggregates (same logic as before)
-      const normalized = rows.map(normalizeRow);
-
-      normalized.sort((a, b) => {
-        const da = new Date(a.Date);
-        const db = new Date(b.Date);
-        return da - db;
-      });
-
-      let totalEnergySum = 0;
-      const dailyUsage = {};
-      const monthlyUsage = {};
-
-      normalized.forEach((item) => {
-        const units = item.Units;
-        const dateStr = item.Date;
-        if (!dateStr || units == null || Number.isNaN(units)) return;
-
-        totalEnergySum += units;
-
-        const d = new Date(dateStr);
-        if (isNaN(d)) return;
-        const dayKey = d.toISOString().slice(0, 10);
-        dailyUsage[dayKey] = (dailyUsage[dayKey] || 0) + units;
-
-        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-        monthlyUsage[monthKey] = (monthlyUsage[monthKey] || 0) + units;
-      });
-
-      const totalDays = Object.keys(dailyUsage).length;
-      const avgEnergy = totalDays > 0 ? totalEnergySum / totalDays : 0;
-
-      const chartArray = Object.entries(dailyUsage).map(([date, units]) => ({ date, units }));
-      chartArray.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-      const monthlyArray = Object.entries(monthlyUsage).map(([month, units]) => ({ month, units }));
-      monthlyArray.sort((a, b) => (a.month > b.month ? 1 : -1));
-
-      let hm = "";
-      let lm = "";
-      if (monthlyArray.length > 0) {
-        const sorted = [...monthlyArray].sort((a, b) => b.units - a.units);
-        hm = `${sorted[0].month} (${sorted[0].units.toFixed(2)} kWh)`;
-        const last = sorted[sorted.length - 1];
-        lm = `${last.month} (${last.units.toFixed(2)} kWh)`;
-      }
-
-      setTotalEnergy(totalEnergySum.toFixed(2));
-      setAverageEnergy(avgEnergy.toFixed(2));
-      setTotalRecords(normalized.length);
-      setChartData(chartArray);
-      setMonthlyData(monthlyArray);
-      setHighestMonth(hm);
-      setLowestMonth(lm);
-    } catch (err) {
-      if (err.response && (err.response.status === 401 || err.response.status === 422 || err.response.status === 403)) {
-        setError("Your session expired or is invalid. Please login again.");
-        localStorage.removeItem("access_token");
-        setTimeout(() => navigate("/login"), 900);
-      } else {
-        console.error("Overview fetch error:", err);
-        setError("Could not load data. Try again or check server.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
+    };
     fetchData();
-    // only run once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const dailyChartOptions = {
+    title: { text: "📈 Daily Energy Usage (kWh)", left: "center", textStyle: { color: "#e2e8f0" } },
+    tooltip: { trigger: "axis" },
+    animationDuration: 800,
+    animationEasing: "cubicOut",
+    xAxis: { type: "category", data: dailyChart.map((d) => d.date), axisLabel: { color: "#94a3b8", rotate: 45 } },
+    yAxis: { type: "value", axisLabel: { color: "#94a3b8" } },
+    series: [{
+      data: dailyChart.map((d) => d.val.toFixed(2)),
+      type: "line",
+      smooth: true,
+      symbol: "circle",
+      lineStyle: { color: "#38bdf8", width: 3 },
+      itemStyle: { color: "#38bdf8" },
+      areaStyle: { color: "rgba(56,189,248,0.25)" },
+    }],
+    grid: { left: "5%", right: "5%", bottom: "15%", containLabel: true },
+  };
+
+  const monthlyChartOptions = {
+    title: { text: "📅 Monthly Energy Usage", left: "center", textStyle: { color: "#e2e8f0" } },
+    tooltip: { trigger: "axis" },
+    animationDuration: 800,
+    animationEasing: "cubicOut",
+    xAxis: { type: "category", data: monthlyChart.map((d) => d.month), axisLabel: { color: "#94a3b8" } },
+    yAxis: { type: "value", axisLabel: { color: "#94a3b8" } },
+    series: [{
+      data: monthlyChart.map((d) => d.val.toFixed(2)),
+      type: "bar",
+      barWidth: 40,
+      itemStyle: {
+        borderRadius: [6, 6, 0, 0],
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: "#22c55e" },
+          { offset: 1, color: "#14532d" },
+        ]),
+      },
+    }],
+    grid: { left: "5%", right: "5%", bottom: "15%", containLabel: true },
+  };
+
   return (
-    <div className="page-container">
-      <nav className="sidebar">
-        <ul>
-          <li><a href="/dataset">Dataset Upload</a></li>
-          <li><a href="/overview" className="active">Overview</a></li>
-          <li><a href="/distribution">Distribution</a></li>
-          <li><a href="/forecasting">Forecasting</a></li>
-          <li><a href="/recommendation">Recommendation</a></li>
-          <li><a href="/prediction">Prediction</a></li>
-        </ul>
-      </nav>
+    <Box
+      sx={{
+        p: 4,
+        color: "#e2e8f0",
+        background: "linear-gradient(180deg, #0f172a 0%, #0a0f1e 100%)",
+        minHeight: "100vh",
+      }}
+    >
+      <Typography
+        variant="h4"
+        align="center"
+        sx={{ mb: 4, color: "#38bdf8", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", gap: 1 }}
+      >
+        <span role="img" aria-label="chart">📊</span> Energy Overview
+      </Typography>
 
-      <main className="overview-main">
-        <h2 className="overview-title">📊 Energy Consumption Overview</h2>
+      {loading ? (
+        <Box display="flex" justifyContent="center" alignItems="center" sx={{ height: "60vh" }}>
+          <CircularProgress sx={{ color: "#38bdf8" }} />
+        </Box>
+      ) : error ? (
+        <Typography color="error" align="center">{error}</Typography>
+      ) : (
+        <>
+          {/* --- Summary Cards --- */}
+          <Grid container spacing={3} justifyContent="center" sx={{ mb: 4 }}>
+            {[
+              { label: "Total Energy", val: `${summary.totalEnergy} kWh`, color: "#22c55e" },
+              { label: "Avg/Day", val: `${summary.averageEnergy} kWh`, color: "#38bdf8" },
+              { label: "Records", val: summary.totalRecords, color: "#facc15" },
+              { label: "Highest", val: summary.highestMonth, color: "#fb7185" },
+              { label: "Lowest", val: summary.lowestMonth, color: "#a78bfa" },
+            ].map((item) => (
+              <Grid item xs={12} sm={6} md={2.3} key={item.label}>
+                <Paper
+                  sx={{
+                    p: 2,
+                    textAlign: "center",
+                    background: "#1e293b",
+                    border: `1px solid ${item.color}55`,
+                    borderRadius: "12px",
+                  }}
+                >
+                  <Typography sx={{ color: "#94a3b8", fontSize: "0.9rem" }}>{item.label}</Typography>
+                  <Typography sx={{ color: item.color, fontWeight: "bold", mt: 1 }}>{item.val}</Typography>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
 
-        {loading && <p>Loading user data...</p>}
-        {error && !loading && <div className="message error">{error}</div>}
+          {/* --- Charts Section (Stacked Full Width) --- */}
+          <Grid
+            container
+            direction="column"
+            spacing={4}
+            sx={{
+              width: "100%",
+              px: { xs: 1, md: 6 },
+              margin: "0 auto",
+              maxWidth: "1600px", // gives some safe limit on very wide screens
+            }}
+          >
+            {/* Daily Usage Chart */}
+            <Grid item xs={12}>
+              <Paper
+                sx={{
+                  background: "#1e293b",
+                  p: 3,
+                  borderRadius: "14px",
+                  height: { xs: "400px", md: "480px" },
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  transition: "all 0.3s ease",
+                  boxShadow: "0px 0px 8px rgba(56,189,248,0.1)",
+                  "&:hover": {
+                    transform: "translateY(-5px)",
+                    boxShadow: "0px 0px 20px rgba(56,189,248,0.25)",
+                  },
+                }}
 
-        {!loading && !error && (
-          <>
-            <div className="summary-container">
-              <div className="card">
-                <h3>Average per Day</h3>
-                <p>{averageEnergy} kWh/day</p>
-              </div>
-              <div className="card">
-                <h3>Total Records</h3>
-                <p>{totalRecords}</p>
-              </div>
-              <div className="card info">
-                <h3>Highest Consumption Month</h3>
-                <p>{highestMonth || "—"}</p>
-              </div>
-              <div className="card info">
-                <h3>Lowest Consumption Month</h3>
-                <p>{lowestMonth || "—"}</p>
-              </div>
-              <div className="card highlight">
-                <h3>Total Energy</h3>
-                <p>{totalEnergy} kWh</p>
-              </div>
-            </div>
+                elevation={4}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: "#38bdf8",
+                    fontWeight: 600,
+                    mb: 2,
+                    textAlign: "center",
+                  }}
+                >
+                  📈 Daily Energy Usage
+                </Typography>
 
-            <div className="chart-section">
-              <h3>📈 Daily Energy Usage Trend</h3>
-              {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={350}>
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis
-                      label={{
-                        value: "Units (kWh)",
-                        angle: -90,
-                        position: "insideLeft",
-                      }}
-                    />
-                    <Tooltip />
-                    <Line
-                      type="monotone"
-                      dataKey="units"
-                      stroke="#2563eb"
-                      strokeWidth={3}
-                      dot={{ r: 3 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <p>No daily chart data available</p>
-              )}
-            </div>
+                <Box sx={{ width: "100%", height: "100%" }}>
+                  <ReactECharts
+                    option={dailyChartOptions}
+                    style={{ height: "100%", width: "100%" }}
+                    opts={{ renderer: "svg" }}
+                  />
+                </Box>
+              </Paper>
+            </Grid>
 
-            <div className="chart-section">
-              <h3>📅 Monthly Energy Usage Trend</h3>
-              {monthlyData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={350}>
-                  <LineChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis
-                      label={{
-                        value: "Units (kWh)",
-                        angle: -90,
-                        position: "insideLeft",
-                      }}
-                    />
-                    <Tooltip />
-                    <Line
-                      type="monotone"
-                      dataKey="units"
-                      stroke="#22c55e"
-                      strokeWidth={3}
-                      dot={{ r: 4 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <p>No monthly chart data available</p>
-              )}
-            </div>
-          </>
-        )}
-      </main>
-    </div>
+            {/* Monthly Usage Chart */}
+            <Grid item xs={12}>
+              <Paper
+                sx={{
+                  background: "#1e293b",
+                  p: 3,
+                  borderRadius: "14px",
+                  height: { xs: "400px", md: "480px" },
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  transition: "all 0.3s ease",
+                  boxShadow: "0px 0px 8px rgba(56,189,248,0.1)",
+                  "&:hover": {
+                    transform: "translateY(-5px)",
+                    boxShadow: "0px 0px 20px rgba(56,189,248,0.25)",
+                  },
+                }}
+
+                elevation={4}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: "#22c55e",
+                    fontWeight: 600,
+                    mb: 2,
+                    textAlign: "center",
+                  }}
+                >
+                  📅 Monthly Energy Usage
+                </Typography>
+
+                <Box sx={{ width: "100%", height: "100%" }}>
+                  <ReactECharts
+                    option={monthlyChartOptions}
+                    style={{ height: "100%", width: "100%" }}
+                    opts={{ renderer: "svg" }}
+                  />
+                </Box>
+              </Paper>
+            </Grid>
+          </Grid>
+
+
+        </>
+      )}
+    </Box>
   );
-}
+};
 
 export default Overview;

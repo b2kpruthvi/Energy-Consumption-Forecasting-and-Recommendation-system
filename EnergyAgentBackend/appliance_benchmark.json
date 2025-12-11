@@ -1,0 +1,9 @@
+{
+  "Fan": 0.075,
+  "Refrigerator": 0.15,
+  "Bulb": 0.015,
+  "Television": 0.1,
+  "Monitor": 0.08,
+  "AirConditioner": 1.15,
+  "MotorPump": 0.95 
+}
